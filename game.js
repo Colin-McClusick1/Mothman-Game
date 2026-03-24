@@ -32,13 +32,13 @@ function loadImage(src) {
   return img;
 }
 
-// ---------- BACKGROUND LAYERS (VERTICAL FIX APPLIED) ----------
+// ---------- BACKGROUND LAYERS ----------
 const bgLayers = [
-  { img: loadImage("bg_layer1.png"), speed: 0.2, offset: 0, y: 0 },     // sky
-  { img: loadImage("bg_layer2.png"), speed: 0.4, offset: 0, y: 40 },    // mountains
-  { img: loadImage("bg_layer3.png"), speed: 0.6, offset: 0, y: 80 },    // mid forest
-  { img: loadImage("bg_layer4.png"), speed: 0.8, offset: 0, y: 120 },   // foreground trees
-  { img: loadImage("bg_layer5.png"), speed: 1.0, offset: 0, y: 180 }    // ground
+  { img: loadImage("bg_layer1.png"), speed: 0.2, offset: 0, y: 0 },
+  { img: loadImage("bg_layer2.png"), speed: 0.4, offset: 0, y: 40 },
+  { img: loadImage("bg_layer3.png"), speed: 0.6, offset: 0, y: 80 },
+  { img: loadImage("bg_layer4.png"), speed: 0.8, offset: 0, y: 120 },
+  { img: loadImage("bg_layer5.png"), speed: 1.0, offset: 0, y: 180 }
 ];
 
 // ---------- BRIDGE FRAMES ----------
@@ -67,7 +67,6 @@ const gravity = 0.6;
 let frameIndex = 0;
 let score = 0;
 
-// Flappy Bird style obstacles
 const GAP_SIZE = 140;
 
 let trees = [
@@ -92,6 +91,8 @@ document.addEventListener("touchstart", flap);
 tapButton.addEventListener("click", flap);
 
 // ---------- START GAME ----------
+startScreen.style.display = "flex"; // ensure visible on load
+
 startScreen.addEventListener("click", () => {
   startScreen.style.display = "none";
   tapButton.style.display = "flex";
@@ -105,29 +106,24 @@ function update() {
   mothVelocity += gravity;
   mothY += mothVelocity;
 
-  // Prevent top-of-screen death
   if (mothY < 0) {
     mothY = 0;
     mothVelocity = 0;
   }
 
-  // Parallax background
   bgLayers.forEach(layer => {
     layer.offset -= layer.speed;
     if (layer.offset <= -GAME_WIDTH) layer.offset += GAME_WIDTH;
   });
 
-  // Trees
   trees.forEach(tree => {
     tree.x -= 3;
 
-    // Recycle tree
     if (tree.x + 80 < 0) {
       tree.x = GAME_WIDTH;
       tree.gapY = randomGapY();
       score++;
 
-      // Bridge logic
       if (score === 10) {
         bridgeActive = true;
         bridgeFrameIndex = 0;
@@ -136,7 +132,6 @@ function update() {
       }
     }
 
-    // Collision detection
     const mothX = 60;
     const mothW = 40;
     const mothH = 40;
@@ -153,7 +148,6 @@ function update() {
     }
   });
 
-  // Bottom of screen kills player
   if (mothY > GAME_HEIGHT) endGame();
 }
 
@@ -184,32 +178,24 @@ restartBtn.addEventListener("click", resetGame);
 function draw() {
   ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-  // Background layers
   bgLayers.forEach(layer => {
     ctx.drawImage(layer.img, layer.offset, layer.y, GAME_WIDTH, GAME_HEIGHT);
     ctx.drawImage(layer.img, layer.offset + GAME_WIDTH, layer.y, GAME_WIDTH, GAME_HEIGHT);
   });
 
-  // Bridge
   if (bridgeActive && bridgeFrameIndex >= 0) {
     ctx.drawImage(bridgeFrames[bridgeFrameIndex], 0, 0, GAME_WIDTH, GAME_HEIGHT);
   }
 
-  // Moth animation
   const mothImg = mothFrames[Math.floor(frameIndex / 10) % 2];
   ctx.drawImage(mothImg, 60, mothY, 40, 40);
   frameIndex++;
 
-  // Trees (top + bottom)
   trees.forEach(tree => {
-    // Top tree
     ctx.drawImage(treeImage, tree.x, tree.gapY - GAP_SIZE - 200, 80, 200);
-
-    // Bottom tree
     ctx.drawImage(treeImage, tree.x, tree.gapY + GAP_SIZE, 80, 200);
   });
 
-  // Score
   ctx.fillStyle = "white";
   ctx.font = "24px Arial";
   ctx.fillText("Score: " + score, 20, 40);
