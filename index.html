@@ -70,14 +70,10 @@ function spawnPipe() {
 function drawPipes() {
     ctx.fillStyle = "#4a8f3f";
     pipes.forEach(pipe => {
-     const treeImg = new Image();
-treeImg.src = "tree.png"; // your generated tree image
+     const treeImg = new Image(tree.png);
+ctx.drawImage(treeImg, pipe.x, pipe.top - treeImg.height, pipeWidth, treeImg.height);
+ctx.drawImage(treeImg, pipe.x, pipe.bottom, pipeWidth, treeImg.height);
 
-function drawTrees() {
-  pipes.forEach(pipe => {
-    ctx.drawImage(treeImg, pipe.x, pipe.top - treeImg.height, pipeWidth, treeImg.height);
-    ctx.drawImage(treeImg, pipe.x, pipe.bottom, pipeWidth, treeImg.height);
-  });
 }
 
 
