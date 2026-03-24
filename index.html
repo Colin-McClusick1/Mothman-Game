@@ -3,10 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <title>Flappy Moth – Bridge Collapse</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <canvas id="gameCanvas" width="800" height="450"></canvas>
+
+  <!-- START SCREEN -->
+  <div id="startScreen">
+    <h1>FLAPPY MOTH</h1>
+    <p>Tap to Begin</p>
+  </div>
+
+  <!-- GAME OVER SCREEN -->
+  <div id="gameOverScreen">
+    <h1>GAME OVER</h1>
+    <p id="finalScore"></p>
+    <button id="restartBtn">Restart</button>
+  </div>
+
+  <!-- MOBILE TAP BUTTON -->
+  <div id="tapButton">TAP</div>
+
+  <!-- GAME CANVAS -->
+  <canvas id="gameCanvas"></canvas>
+
   <script src="game.js"></script>
 </body>
 </html>
