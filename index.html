@@ -1,8 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fly away Mothman</title>
+<style>
+    body { margin: 0; overflow: hidden; background: #0d0221; font-family: sans-serif; }
+    canvas { display: block; margin: 0 auto; }
+    #score {
+        position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+        color: white; font-size: 32px; font-weight: bold;
+        text-shadow: 2px 2px 4px black; display: none;
+    }
+    #titleScreen {
+        position: absolute; left: 50%; top: 50%; transform: translate(-50%, -60%);
+        color: white; text-align: center;
+    }
+    #titleScreen h1 { font-size: 64px; margin-bottom: 20px; text-shadow: 3px 3px 6px black; }
+    #titleScreen p  { font-size: 18px; opacity: 0.8; margin-bottom: 24px; }
+    button {
+        padding: 12px 28px; font-size: 22px;
+        background: #4a1a6a; border: 2px solid #9060cc; border-radius: 8px;
+        cursor: pointer; color: white; box-shadow: 2px 2px 8px black;
+    }
+    button:hover { background: #6a2a9a; }
+    #restartBtn { position: absolute; left: 50%; top: 55%; transform: translateX(-50%); display: none; }
+    #loadingScreen {
+        position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+        color: white; font-size: 24px;
+    }
+</style>
+</head>
+<body>
+
+<canvas id="game"></canvas>
+<div id="score">0</div>
+<div id="loadingScreen">Loading...</div>
+<div id="titleScreen" style="display:none;">
+    <h1>Fly Mothman</h1>
+    <p>Click or press Space to flap</p>
+    <button id="startBtn">Start</button>
+</div>
+<button id="restartBtn">Restart</button>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx    = canvas.getContext('2d');
+
+// Fit canvas to window
+canvas.width  = Math.min(480, window.innerWidth);
+canvas.height = Math.min(640, window.innerHeight);
+const W = canvas.width, H = canvas.height;
+
+// ------------------------------------------------------------
+// IMAGE LOADING
+// ------------------------------------------------------------
+let loadedCount = 0;
+let totalAssets = 0;
+
+function track(img) {
+    totalAssets++;
+    img.onload = onLoad;
+    img.onerror = onLoad;
+}
+
+function onLoad() {
+    loadedCount++;
+    if (loadedCount >= totalAssets) {
+        document.getElementById('loadingScreen').style.display = 'none';
+        document.getElementById('titleScreen').style.display = 'block';
+    }
+}
+
+// Moth frames
+const mothFrames = [new Image(), new Image()];
+mothFrames[0].src = "moth1.png";
+mothFrames[1].src = "moth2.png";
+track(mothFrames[0]);
+track(mothFrames[1]);
+
+// Tree
+const treeImg = new Image();
+treeImg.src = "tree.png";
+track(treeImg);
+
+// Background layers
+const bgLayers = [
+    { img: new Image(), src: "bg_layer1.png", speed: 0.2, x: 0 },
+    { img: new Image(), src: "bg_layer2.png", speed: 0.4, x: 0 },
+    { img: new Image(), src: "bg_layer3.png", speed: 0.6, x: 0 },
+    { img: new Image(), src: "bg_layer4.png", speed: 0.8, x: 0 }
+];
+bgLayers.forEach(layer => {
+    layer.img.src = layer.src;
+    track(layer.img);
+});
+
+// Bridge frames
+const bridgeFrames = [
+    new Image(), new Image(), new Image(), new Image()
+];
+["bridge1.png","bridge2.png","bridge3.png","bridge4.png"].forEach((src,i)=>{
+    bridgeFrames[i].src = src;
+    track(bridgeFrames[i]);
+});
+
+// ------------------------------------------------------------
+// GAME STATE
+// ------------------------------------------------------------
+let score = 0;
+let frame = 0;
+let gameOver = false;
+let gameStarted = false;
+
+// Moth
+let moth;
+const MOTH_W = 70;
+const MOTH_H = 63;
+const GRAVITY = 0.42;
+const JUMP = -7.5;
+
+// Pipes (trees)
+let pipes = [];
+const PIPE_W = 90;
+const PIPE_GAP = 185;
+
+// Bridge logic
+let bridgeActive = false;
+let bridgeFrameIndex = 0;
+let treePassCount = 0;
+let bridgePassCount = 0;
+
+// ------------------------------------------------------------
+// RESET
+// ------------------------------------------------------------
+function resetState() {
+    score = 0;
+    frame = 0;
+    gameOver = false;
+    pipes = [];
+
+    moth = { x: 100, y: H/2, vy: 0, frameIdx: 0 };
+
+    treePassCount = 0;
+    bridgeActive = false;
+    bridgeFrameIndex = 0;
+    bridgePassCount = 0;
+
+    document.getElementById("score").textContent = "0";
+}
+
+// ------------------------------------------------------------
+// BACKGROUND DRAW
+// ------------------------------------------------------------
+function drawBg() {
+    bgLayers.forEach(layer => {
+        layer.x -= layer.speed;
+        if (layer.x <= -W) layer.x += W;
+
+        ctx.drawImage(layer.img, layer.x, 0, W, H);
+        ctx.drawImage(layer.img, layer.x + W, 0, W, H);
+    });
+}
+
+// ------------------------------------------------------------
+// BRIDGE DRAW
+// ------------------------------------------------------------
+function drawBridge() {
+    if (!bridgeActive) return;
+    ctx.drawImage(bridgeFrames[bridgeFrameIndex], 0, 0, W, H);
+}
+
+// ------------------------------------------------------------
+// TREE / PIPE LOGIC
+// ------------------------------------------------------------
+function spawnPipe() {
+    const topH = Math.random() * (H - PIPE_GAP - 120) + 60;
+    pipes.push({ x: W, topH, botY: topH + PIPE_GAP, scored: false });
+}
+
+function playerPassedTree() {
+    return pipes.some(pipe => !pipe.scored && pipe.x + PIPE_W < moth.x);
+}
+
+function updatePipes() {
+    pipes.forEach(pipe => {
+        pipe.x -= 3;
+
+        if (!pipe.scored && pipe.x + PIPE_W < moth.x) {
+            pipe.scored = true;
+            score++;
+            document.getElementById("score").textContent = score;
+
+            // Count toward bridge trigger
+            treePassCount++;
+
+            if (treePassCount === 10) {
+                bridgeActive = true;
+                bridgeFrameIndex = 0;
+                bridgePassCount = 0;
+            }
+
+            if (bridgeActive) {
+                bridgePassCount++;
+                if (bridgePassCount <= 5) {
+                    bridgeFrameIndex = Math.min(bridgePassCount - 1, 3);
+                } else {
+                    bridgeActive = false;
+                    treePassCount = 0;
+                }
+            }
+        }
+
+        // Collision
+        const inX = moth.x - MOTH_W*0.3 < pipe.x + PIPE_W &&
+                    moth.x + MOTH_W*0.3 > pipe.x;
+        const inY = moth.y - MOTH_H*0.35 < pipe.topH ||
+                    moth.y + MOTH_H*0.35 > pipe.botY;
+
+        if (inX && inY) endGame();
+    });
+
+    pipes = pipes.filter(p => p.x + PIPE_W > 0);
+}
+
+function drawPipes() {
+    pipes.forEach(pipe => {
+        const botH = H - pipe.botY;
+        if (botH > 0) ctx.drawImage(treeImg, pipe.x, pipe.botY, PIPE_W, botH);
+
+        const topH = pipe.topH;
+        if (topH > 0) {
+            ctx.save();
+            ctx.translate(pipe.x + PIPE_W/2, topH/2);
+            ctx.scale(1, -1);
+            ctx.drawImage(treeImg, -PIPE_W/2, -topH/2, PIPE_W, topH);
+            ctx.restore();
+        }
+    });
+}
+
+// ------------------------------------------------------------
+// MOTH DRAW
+// ------------------------------------------------------------
+function drawMoth() {
+    const tilt = Math.max(-0.45, Math.min(0.45, moth.vy * 0.055));
+
+    ctx.save();
+    ctx.translate(moth.x, moth.y);
+    ctx.rotate(tilt);
+    ctx.drawImage(mothFrames[moth.frameIdx], -MOTH_W/2, -MOTH_H/2, MOTH_W, MOTH_H);
+    ctx.restore();
+}
+
+// ------------------------------------------------------------
+// GAME LOOP
+// ------------------------------------------------------------
 function loop() {
     if (!gameStarted || gameOver) return;
 
     drawBg();
-    drawBridge(); // ← bridge layer between bg and trees
+    drawBridge();
 
     moth.vy += GRAVITY;
     moth.y  += moth.vy;
@@ -13,13 +270,77 @@ function loop() {
     drawPipes();
     drawMoth();
 
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 30px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(score, W / 2, 44);
+    // Score text
+    ctx.fillStyle = "white";
+    ctx.font = "bold 30px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(score, W/2, 44);
 
-    if (moth.y + MOTH_H / 2 > H || moth.y - MOTH_H / 2 < 0) endGame();
+    if (moth.y + MOTH_H/2 > H || moth.y - MOTH_H/2 < 0) endGame();
 
     frame++;
     requestAnimationFrame(loop);
 }
+
+// ------------------------------------------------------------
+// END GAME
+// ------------------------------------------------------------
+function endGame() {
+    if (gameOver) return;
+    gameOver = true;
+
+    drawBg();
+    drawBridge();
+    drawPipes();
+    drawMoth();
+
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.fillRect(0,0,W,H);
+
+    ctx.fillStyle = "white";
+    ctx.font = "bold 40px sans-serif";
+    ctx.fillText("Game Over", W/2, H/2 - 24);
+    ctx.font = "26px sans-serif";
+    ctx.fillText("Score: " + score, W/2, H/2 + 20);
+
+    document.getElementById("restartBtn").style.display = "block";
+}
+
+// ------------------------------------------------------------
+// CONTROLS
+// ------------------------------------------------------------
+function flap() {
+    if (!gameStarted || gameOver) return;
+
+    moth.vy = JUMP;
+    moth.frameIdx = 1;
+
+    setTimeout(() => moth.frameIdx = 0, 120);
+}
+
+document.addEventListener("keydown", e => {
+    if (e.code === "Space") { e.preventDefault(); flap(); }
+});
+canvas.addEventListener("mousedown", flap);
+canvas.addEventListener("touchstart", e => { e.preventDefault(); flap(); }, { passive:false });
+
+// ------------------------------------------------------------
+// START / RESTART
+// ------------------------------------------------------------
+document.getElementById("startBtn").onclick = () => {
+    document.getElementById("titleScreen").style.display = "none";
+    document.getElementById("score").style.display = "block";
+    resetState();
+    gameStarted = true;
+    loop();
+};
+
+document.getElementById("restartBtn").onclick = () => {
+    document.getElementById("restartBtn").style.display = "none";
+    resetState();
+    gameOver = false;
+    loop();
+};
+</script>
+</body>
+</html>
