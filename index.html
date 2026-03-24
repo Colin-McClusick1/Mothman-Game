@@ -89,10 +89,11 @@ function update() {
 
     pipes.forEach(pipe => {
         pipe.x -= 3;
-        if (pipe.x + pipeWidth === moth.x) {
-            score++;
-            document.getElementById("score").textContent = score;
-        }
+       if (!pipe.scored && pipe.x + pipeWidth < moth.x) {
+    score++;
+    pipe.scored = true;
+    document.getElementById("score").textContent = score;
+}
         if (
             moth.x < pipe.x + pipeWidth &&
             moth.x + moth.width > pipe.x &&
