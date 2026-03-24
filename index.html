@@ -5,93 +5,130 @@
 <title>Flappy Moth</title>
 <style>
     body { margin: 0; overflow: hidden; background: #0d0221; font-family: sans-serif; }
-    canvas { display: block; margin: 0 auto; background: black; }
+    canvas { display: block; margin: 0 auto; }
     #score {
-        position: absolute; top: 20px; left: 20px;
+        position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
         color: white; font-size: 32px; font-weight: bold;
         text-shadow: 2px 2px 4px black; display: none;
     }
-    #titleScreen, #restartBtn {
-        position: absolute; left: 50%; transform: translateX(-50%);
+    #titleScreen {
+        position: absolute; left: 50%; top: 50%; transform: translate(-50%, -60%);
         color: white; text-align: center;
     }
-    #titleScreen { top: 200px; }
-    #titleScreen h1 {
-        font-size: 64px; margin-bottom: 20px;
-        text-shadow: 3px 3px 6px black;
+    #titleScreen h1 { font-size: 64px; margin-bottom: 20px; text-shadow: 3px 3px 6px black; }
+    #titleScreen p  { font-size: 18px; opacity: 0.8; margin-bottom: 24px; }
+    button {
+        padding: 12px 28px; font-size: 22px;
+        background: #4a1a6a; border: 2px solid #9060cc; border-radius: 8px;
+        cursor: pointer; color: white; box-shadow: 2px 2px 8px black;
     }
-    #titleScreen button, #restartBtn {
-        padding: 12px 24px; font-size: 24px;
-        background: #4a8f3f; border: none; border-radius: 8px;
-        cursor: pointer; color: white; box-shadow: 2px 2px 6px black;
+    button:hover { background: #6a2a9a; }
+    #restartBtn { position: absolute; left: 50%; top: 55%; transform: translateX(-50%); display: none; }
+    #loadingScreen {
+        position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+        color: white; font-size: 24px;
     }
-    #restartBtn { top: 350px; display: none; }
 </style>
 </head>
 <body>
 
-<canvas id="game" width="480" height="640"></canvas>
+<canvas id="game"></canvas>
 <div id="score">0</div>
-
-<div id="titleScreen">
-    <h1>Flappy Moth</h1>
+<div id="loadingScreen">Loading...</div>
+<div id="titleScreen" style="display:none;">
+    <h1>🦋 Flappy Moth</h1>
+    <p>Click or press Space to flap</p>
     <button id="startBtn">Start</button>
 </div>
-
 <button id="restartBtn">Restart</button>
 
 <script>
-// ---------- ASSETS ----------
+const canvas = document.getElementById('game');
+const ctx    = canvas.getContext('2d');
+
+// Fit canvas to window
+canvas.width  = Math.min(480, window.innerWidth);
+canvas.height = Math.min(640, window.innerHeight);
+const W = canvas.width, H = canvas.height;
+
+// ---------- LOAD IMAGES ----------
 const mothFrames = [new Image(), new Image()];
-mothFrames[0].src = "moth1.png";
-mothFrames[1].src = "moth2.png";
+mothFrames[0].src = 'moth1.png';
+mothFrames[1].src = 'moth2.png';
 
 const treeImg = new Image();
-treeImg.src = "tree.png"; // obstacle sprite
+treeImg.src = 'tree.png';
 
-// ---------- CANVAS ----------
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+let loadedCount = 0;
+const totalAssets = 3;
 
-// ---------- GAME STATE ----------
-let score = 0;
-let gameOver = false;
-let gameStarted = false;
-let frame = 0;
+function onLoad() {
+    loadedCount++;
+    if (loadedCount === totalAssets) {
+        document.getElementById('loadingScreen').style.display = 'none';
+        document.getElementById('titleScreen').style.display = 'block';
+    }
+}
+mothFrames[0].onload = onLoad;
+mothFrames[1].onload = onLoad;
+treeImg.onload = onLoad;
 
-// ---------- MOTH ----------
-const moth = {
-    x: 100,
-    y: canvas.height / 2,
-    width: 60,
-    height: 60,
-    velocity: 0,
-    gravity: 0.4,
-    jumpStrength: -7,
-    frame: 0,
-    frameTick: 0
+// Fallback: if images fail (e.g. wrong path), still let game start
+mothFrames[0].onerror = mothFrames[1].onerror = treeImg.onerror = () => {
+    onLoad();
+    console.warn('An image failed to load — check filenames are lowercase and in the same folder.');
 };
 
-function drawMoth() {
-    moth.frameTick++;
-    if (moth.frameTick % 10 === 0) {
-        moth.frame = (moth.frame + 1) % 2;
-    }
-    ctx.drawImage(mothFrames[moth.frame], moth.x, moth.y, moth.width, moth.height);
+// ---------- GAME STATE ----------
+let score, frame, gameOver, gameStarted;
+
+// ---------- MOTH ----------
+let moth;
+const MOTH_W  = 70;
+const MOTH_H  = 63;   // preserve ~627:565 ratio
+const GRAVITY   = 0.42;
+const JUMP      = -7.5;
+
+function resetState() {
+    score    = 0;
+    frame    = 0;
+    gameOver = false;
+    moth = { x: 100, y: H / 2, vy: 0, frameIdx: 0, frameTick: 0 };
+    pipes = [];
+    document.getElementById('score').textContent = '0';
 }
 
-// ---------- TREES (PIPES) ----------
+// ---------- PIPES (TREES) ----------
 let pipes = [];
-const pipeWidth = 80;
-const pipeGap = 180;
+const PIPE_W   = 90;       // display width of each tree
+const PIPE_GAP = 185;
+// tree image is 1024x1536 — natural ratio ~0.667 wide per unit height
+// We'll draw the trunk portion; full image height mapped to pipe segment height
+const TREE_ASPECT = 1024 / 1536; // ~0.667
 
 function spawnPipe() {
-    const topHeight = Math.random() * (canvas.height - pipeGap - 100) + 50;
-    pipes.push({
-        x: canvas.width,
-        top: topHeight,
-        bottom: topHeight + pipeGap,
-        scored: false
+    const topH = Math.random() * (H - PIPE_GAP - 120) + 60;
+    pipes.push({ x: W, topH, botY: topH + PIPE_GAP, scored: false });
+}
+
+function drawPipes() {
+    pipes.forEach(pipe => {
+        // --- BOTTOM tree: normal orientation, roots at bottom ---
+        // Draw so the tree trunk fills from botY to bottom of screen
+        const botSegH = H - pipe.botY;
+        if (botSegH > 0) {
+            ctx.drawImage(treeImg, pipe.x, pipe.botY, PIPE_W, botSegH);
+        }
+
+        // --- TOP tree: flip vertically so roots point upward (away from gap) ---
+        const topSegH = pipe.topH;
+        if (topSegH > 0) {
+            ctx.save();
+            ctx.translate(pipe.x + PIPE_W / 2, pipe.topH / 2);
+            ctx.scale(1, -1);
+            ctx.drawImage(treeImg, -PIPE_W / 2, -pipe.topH / 2, PIPE_W, topSegH);
+            ctx.restore();
+        }
     });
 }
 
@@ -99,115 +136,137 @@ function updatePipes() {
     pipes.forEach(pipe => {
         pipe.x -= 3;
 
-        // scoring when moth passes the tree
-        if (!pipe.scored && pipe.x + pipeWidth < moth.x) {
+        if (!pipe.scored && pipe.x + PIPE_W < moth.x) {
             pipe.scored = true;
             score++;
-            document.getElementById("score").textContent = score;
+            document.getElementById('score').textContent = score;
         }
 
-        // collision
-        const hitHorizontally =
-            moth.x < pipe.x + pipeWidth &&
-            moth.x + moth.width > pipe.x;
+        // Collision — slightly inset hitbox so it feels fair
+        const inX = moth.x - MOTH_W * 0.3 < pipe.x + PIPE_W &&
+                    moth.x + MOTH_W * 0.3 > pipe.x;
+        const inY = moth.y - MOTH_H * 0.35 < pipe.topH ||
+                    moth.y + MOTH_H * 0.35 > pipe.botY;
 
-        const hitVertically =
-            moth.y < pipe.top || moth.y + moth.height > pipe.bottom;
-
-        if (hitHorizontally && hitVertically) {
-            endGame();
-        }
+        if (inX && inY) endGame();
     });
 
-    // remove off-screen pipes
-    pipes = pipes.filter(pipe => pipe.x + pipeWidth > 0);
+    pipes = pipes.filter(p => p.x + PIPE_W > 0);
 }
 
-function drawPipes() {
-    pipes.forEach(pipe => {
-        // top tree
-        ctx.drawImage(
-            treeImg,
-            pipe.x,
-            pipe.top - treeImg.height,
-            pipeWidth,
-            treeImg.height
-        );
-        // bottom tree
-        ctx.drawImage(
-            treeImg,
-            pipe.x,
-            pipe.bottom,
-            pipeWidth,
-            treeImg.height
-        );
+// ---------- DRAW MOTH ----------
+function drawMoth() {
+    moth.frameTick++;
+    if (moth.frameTick % 8 === 0) {
+        moth.frameIdx = (moth.frameIdx + 1) % 2;
+    }
+
+    const tilt = Math.max(-0.45, Math.min(0.45, moth.vy * 0.055));
+
+    ctx.save();
+    ctx.translate(moth.x, moth.y);
+    ctx.rotate(tilt);
+    ctx.drawImage(mothFrames[moth.frameIdx], -MOTH_W / 2, -MOTH_H / 2, MOTH_W, MOTH_H);
+    ctx.restore();
+}
+
+// ---------- BACKGROUND ----------
+let stars = [];
+function initStars() {
+    stars = [];
+    for (let i = 0; i < 90; i++) {
+        stars.push({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.4 + 0.3, t: Math.random() * Math.PI * 2 });
+    }
+}
+
+function drawBg() {
+    ctx.fillStyle = '#0d0221';
+    ctx.fillRect(0, 0, W, H);
+    stars.forEach(s => {
+        s.t += 0.025;
+        ctx.globalAlpha = 0.35 + 0.45 * Math.sin(s.t);
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = '#dde';
+        ctx.fill();
     });
+    ctx.globalAlpha = 1;
 }
 
 // ---------- GAME LOOP ----------
-function update() {
+function loop() {
     if (!gameStarted || gameOver) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBg();
 
-    // moth physics
-    moth.velocity += moth.gravity;
-    moth.y += moth.velocity;
+    moth.vy += GRAVITY;
+    moth.y  += moth.vy;
 
-    // spawn pipes
-    if (frame % 120 === 0) {
-        spawnPipe();
-    }
+    if (frame % 120 === 0) spawnPipe();
 
     updatePipes();
     drawPipes();
     drawMoth();
 
-    // ground / ceiling collision
-    if (moth.y + moth.height > canvas.height || moth.y < 0) {
-        endGame();
-    }
+    // Score on canvas too
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 30px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(score, W / 2, 44);
+
+    if (moth.y + MOTH_H / 2 > H || moth.y - MOTH_H / 2 < 0) endGame();
 
     frame++;
-    requestAnimationFrame(update);
+    requestAnimationFrame(loop);
 }
 
 function endGame() {
     if (gameOver) return;
     gameOver = true;
-    document.getElementById("restartBtn").style.display = "block";
+
+    // Draw one last frame with overlay
+    drawBg();
+    drawPipes();
+    drawMoth();
+
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 40px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Game Over', W / 2, H / 2 - 24);
+    ctx.font = '26px sans-serif';
+    ctx.fillText('Score: ' + score, W / 2, H / 2 + 20);
+
+    document.getElementById('restartBtn').style.display = 'block';
 }
 
 // ---------- CONTROLS ----------
 function flap() {
     if (!gameStarted || gameOver) return;
-    moth.velocity = moth.jumpStrength;
+    moth.vy = JUMP;
 }
 
-document.addEventListener("keydown", flap);
-document.addEventListener("mousedown", flap);
+document.addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); flap(); } });
+canvas.addEventListener('mousedown', flap);
+canvas.addEventListener('touchstart', e => { e.preventDefault(); flap(); }, { passive: false });
 
 // ---------- START / RESTART ----------
-document.getElementById("startBtn").onclick = () => {
-    document.getElementById("titleScreen").style.display = "none";
-    document.getElementById("score").style.display = "block";
+document.getElementById('startBtn').onclick = () => {
+    document.getElementById('titleScreen').style.display = 'none';
+    document.getElementById('score').style.display = 'block';
+    initStars();
+    resetState();
     gameStarted = true;
-    gameOver = false;
-    update();
+    loop();
 };
 
-document.getElementById("restartBtn").onclick = () => {
-    score = 0;
-    frame = 0;
-    moth.y = canvas.height / 2;
-    moth.velocity = 0;
-    pipes = [];
+document.getElementById('restartBtn').onclick = () => {
+    document.getElementById('restartBtn').style.display = 'none';
+    resetState();
     gameOver = false;
-    document.getElementById("score").textContent = "0";
-    document.getElementById("restartBtn").style.display = "none";
-    update();
+    loop();
 };
 </script>
-
 </body>
 </html>
