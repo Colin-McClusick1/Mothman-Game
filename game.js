@@ -91,7 +91,7 @@ document.addEventListener("touchstart", flap);
 tapButton.addEventListener("click", flap);
 
 // ---------- START GAME ----------
-startScreen.style.display = "flex"; // ensure visible on load
+startScreen.style.display = "flex";
 
 startScreen.addEventListener("click", () => {
   startScreen.style.display = "none";
@@ -106,16 +106,19 @@ function update() {
   mothVelocity += gravity;
   mothY += mothVelocity;
 
+  // Prevent top-of-screen death
   if (mothY < 0) {
     mothY = 0;
     mothVelocity = 0;
   }
 
+  // Parallax background
   bgLayers.forEach(layer => {
     layer.offset -= layer.speed;
     if (layer.offset <= -GAME_WIDTH) layer.offset += GAME_WIDTH;
   });
 
+  // Trees
   trees.forEach(tree => {
     tree.x -= 3;
 
@@ -124,6 +127,7 @@ function update() {
       tree.gapY = randomGapY();
       score++;
 
+      // Bridge logic
       if (score === 10) {
         bridgeActive = true;
         bridgeFrameIndex = 0;
@@ -132,6 +136,7 @@ function update() {
       }
     }
 
+    // Collision detection
     const mothX = 60;
     const mothW = 40;
     const mothH = 40;
@@ -148,6 +153,7 @@ function update() {
     }
   });
 
+  // Bottom kills player
   if (mothY > GAME_HEIGHT) endGame();
 }
 
@@ -178,24 +184,29 @@ restartBtn.addEventListener("click", resetGame);
 function draw() {
   ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
+  // Background layers
   bgLayers.forEach(layer => {
     ctx.drawImage(layer.img, layer.offset, layer.y, GAME_WIDTH, GAME_HEIGHT);
     ctx.drawImage(layer.img, layer.offset + GAME_WIDTH, layer.y, GAME_WIDTH, GAME_HEIGHT);
   });
 
+  // Bridge
   if (bridgeActive && bridgeFrameIndex >= 0) {
     ctx.drawImage(bridgeFrames[bridgeFrameIndex], 0, 0, GAME_WIDTH, GAME_HEIGHT);
   }
 
+  // Moth
   const mothImg = mothFrames[Math.floor(frameIndex / 10) % 2];
   ctx.drawImage(mothImg, 60, mothY, 40, 40);
   frameIndex++;
 
+  // Trees
   trees.forEach(tree => {
     ctx.drawImage(treeImage, tree.x, tree.gapY - GAP_SIZE - 200, 80, 200);
     ctx.drawImage(treeImage, tree.x, tree.gapY + GAP_SIZE, 80, 200);
   });
 
+  // Score
   ctx.fillStyle = "white";
   ctx.font = "24px Arial";
   ctx.fillText("Score: " + score, 20, 40);
