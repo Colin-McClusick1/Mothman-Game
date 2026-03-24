@@ -167,26 +167,64 @@ function drawMoth() {
 }
 
 // ---------- BACKGROUND ----------
-let stars = [];
-function initStars() {
-    stars = [];
-    for (let i = 0; i < 90; i++) {
-        stars.push({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.4 + 0.3, t: Math.random() * Math.PI * 2 });
-    }
-}
+// === Background Layers ===
+const bgLayers = [
+  { src: 'bg_layer1.png', speed: 0.2 },
+  { src: 'bg_layer2.png', speed: 0.4 },
+  { src: 'bg_layer3.png', speed: 0.6 },
+  { src: 'bg_layer4.png', speed: 0.8 }
+];
 
-function drawBg() {
-    ctx.fillStyle = '#0d0221';
-    ctx.fillRect(0, 0, W, H);
-    stars.forEach(s => {
-        s.t += 0.025;
-        ctx.globalAlpha = 0.35 + 0.45 * Math.sin(s.t);
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = '#dde';
-        ctx.fill();
-    });
-    ctx.globalAlpha = 1;
+// === Bridge Assets ===
+const bridgeFrames = [
+  'bridge1.png',
+  'bridge2.png',
+  'bridge3.png',
+  'bridge4.png'
+];
+
+let bridgeActive = false;
+let bridgeFrameIndex = 0;
+let treePassCount = 0;
+let bridgePassCount = 0;
+
+// === Game Loop ===
+function updateGame() {
+  // Scroll background layers
+  bgLayers.forEach(layer => {
+    layer.x -= layer.speed;
+    drawImage(layer.src, layer.x, 0);
+  });
+
+  // Count tree passes
+  if (playerPassedTree()) {
+    treePassCount++;
+
+    // Trigger bridge appearance
+    if (treePassCount === 10) {
+      bridgeActive = true;
+      bridgeFrameIndex = 0;
+      bridgePassCount = 0;
+    }
+
+    // Advance bridge collapse
+    if (bridgeActive) {
+      bridgePassCount++;
+      if (bridgePassCount <= 5) {
+        bridgeFrameIndex = Math.min(bridgePassCount - 1, bridgeFrames.length - 1);
+      } else {
+        bridgeActive = false;
+        treePassCount = 0; // reset for next cycle
+      }
+    }
+  }
+
+  // Draw bridge if active
+  if (bridgeActive) {
+    drawImage(bridgeFrames[bridgeFrameIndex], 0, 0);
+  }
+
+  // Draw player, trees, etc.
 }
 
 // ---------- GAME LOOP ----------
