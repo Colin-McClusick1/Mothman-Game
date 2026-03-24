@@ -70,12 +70,10 @@ function spawnPipe() {
 function drawPipes() {
     ctx.fillStyle = "#4a8f3f";
     pipes.forEach(pipe => {
-     const treeImg = new Image(tree.png);
-ctx.drawImage(treeImg, pipe.x, pipe.top - treeImg.height, pipeWidth, treeImg.height);
-ctx.drawImage(treeImg, pipe.x, pipe.bottom, pipeWidth, treeImg.height);
-
+        ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
+        ctx.fillRect(pipe.x, pipe.bottom, pipeWidth, canvas.height - pipe.bottom);
+    });
 }
-
 
 // Game loop
 let frame = 0;
