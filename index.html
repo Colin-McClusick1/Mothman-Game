@@ -156,10 +156,6 @@ function updatePipes() {
 
 // ---------- DRAW MOTH ----------
 function drawMoth() {
-    moth.frameTick++;
-    if (moth.frameTick % 8 === 0) {
-        moth.frameIdx = (moth.frameIdx + 1) % 2;
-    }
 
     const tilt = Math.max(-0.45, Math.min(0.45, moth.vy * 0.055));
 
@@ -244,8 +240,18 @@ function endGame() {
 // ---------- CONTROLS ----------
 function flap() {
     if (!gameStarted || gameOver) return;
+
     moth.vy = JUMP;
+
+    // Switch to frame 2 on click
+    moth.frameIdx = 1;
+
+    // After 120ms, return to frame 1
+    setTimeout(() => {
+        moth.frameIdx = 0;
+    }, 120);
 }
+
 
 document.addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); flap(); } });
 canvas.addEventListener('mousedown', flap);
