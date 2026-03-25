@@ -1,4 +1,11 @@
 /* --------------------------------------------------
+   MOBILE VIEWPORT FIX (TRUE FULLSCREEN)
+-------------------------------------------------- */
+:root {
+  --vh: 1vh;
+}
+
+/* --------------------------------------------------
    GLOBAL LAYOUT / MOBILE OPTIMIZATION
 -------------------------------------------------- */
 html, body {
@@ -6,7 +13,7 @@ html, body {
   padding: 0;
   overflow: hidden;
   width: 100vw;
-  height: 100vh;
+  height: calc(var(--vh) * 100);
   touch-action: none;
   background: black;
   font-family: Arial, sans-serif;
@@ -30,7 +37,7 @@ html, body {
   top: 0;
   left: 0;
   width: 100vw;
-  height: 100vh;
+  height: calc(var(--vh) * 100);
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(3px);
   display: flex;
@@ -41,9 +48,8 @@ html, body {
 }
 
 #startScreen.hidden {
- opacity: 0;
+  opacity: 0;
   pointer-events: none;
-  transition: opacity 0.4s ease-out;
 }
 
 #titleContainer {
@@ -87,7 +93,7 @@ html, body {
   top: 0;
   left: 0;
   width: 100vw;
-  height: 100vh;
+  height: calc(var(--vh) * 100);
   background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(3px);
   display: none;
@@ -137,26 +143,6 @@ html, body {
   background: rgba(255, 0, 0, 0.7);
   color: white;
   border: none;
-}
-
-/* --------------------------------------------------
-   TAP BUTTON (MOBILE)
--------------------------------------------------- */
-#tapButton {
-  position: fixed;
-  bottom: 6vh;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(255, 0, 0, 0.7);
-  padding: 2vh 6vh;
-  border-radius: 1.5vh;
-  color: white;
-  font-size: 3vh;
-  font-weight: bold;
-  display: none;
-  z-index: 20;
-  user-select: none;
-  touch-action: manipulation;
 }
 
 /* --------------------------------------------------
