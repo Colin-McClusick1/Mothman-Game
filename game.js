@@ -53,7 +53,7 @@ const bridgeFrames = [
 let bridgeState = "inactive";      // "inactive", "scrollingIn", "locked", "scrollingOut"
 let bridgeX = GAME_WIDTH;          // starts off-screen to the right
 const BRIDGE_SCROLL_SPEED = 0.8;   // same as layer 4 speed
-const BRIDGE_Y = 90;               // higher so the bridge is more visible
+const BRIDGE_Y = 70;               // higher so the bridge is more visible
 let bridgePanelIndex = 0;          // 0–3 => bridge1–bridge4
 let bridgePointsOnCurrentPanel = 0;
 let bridgeTriggered = false;       // ensure it only triggers once (at score 10)
