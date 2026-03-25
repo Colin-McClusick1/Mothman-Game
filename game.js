@@ -242,7 +242,7 @@ function draw() {
     ctx.drawImage(bridgeImg, layer4.offset + GAME_WIDTH, BRIDGE_Y, GAME_WIDTH, GAME_HEIGHT);
   }
 
-  // Draw layer 5 (ground)
+// Draw layer 5 (ground)
 const layer5 = bgLayers[4];
 ctx.drawImage(layer5.img, layer5.offset, layer5.y, GAME_WIDTH, GAME_HEIGHT);
 ctx.drawImage(layer5.img, layer5.offset + GAME_WIDTH, layer5.y, GAME_WIDTH, GAME_HEIGHT);
