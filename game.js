@@ -49,14 +49,12 @@ const bridgeFrames = [
   loadImage("bridge4.png")
 ];
 
-// Bridge behaves as a special replacement for layer 4
-let bridgeState = "inactive";      // "inactive", "scrollingIn", "locked", "scrollingOut"
-let bridgeX = GAME_WIDTH;          // starts off-screen to the right
-const BRIDGE_SCROLL_SPEED = 0.8;   // same as layer 4 speed
-const BRIDGE_Y = 90;               // higher so the bridge is more visible
-let bridgePanelIndex = 0;          // 0–3 => bridge1–bridge4
-let bridgePointsOnCurrentPanel = 0;
-let bridgeTriggered = false;       // ensure it only triggers once (at score 10)
+let bridgeState = "inactive";
+let bridgeX = GAME_WIDTH;
+const BRIDGE_SCROLL_SPEED = 0.8;
+const BRIDGE_Y = 90;
+let bridgePanelIndex = 0;
+let bridgeTriggered = false;
 
 // ---------- MOTH + TREES ----------
 const mothFrames = [
@@ -70,8 +68,7 @@ const treeImage = loadImage("tree.png");
 let mothY = 150;
 let mothVelocity = 0;
 const gravity = 0.6;
-let frameIndex = 0;
-let flapAnimTimer = 0; // counts down wing-flap frames
+let flapAnimTimer = 0;
 let score = 0;
 
 const GAP_SIZE = 140;
@@ -88,7 +85,7 @@ function randomGapY() {
 function flap() {
   if (!gameRunning) return;
   mothVelocity = -10;
-  flapAnimTimer = 10; // wings flap for 10 frames
+  flapAnimTimer = 10;
 }
 
 document.addEventListener("keydown", (e) => {
@@ -126,12 +123,53 @@ function update() {
     if (layer.offset <= -GAME_WIDTH) layer.offset += GAME_WIDTH;
   });
 
- 
+  // --- TREES ---
+  trees.forEach(tree => {
+    tree.x -= 3;
+
+    // Recycle tree
+    if (tree.x + 80 < 0) {
+      tree.x = GAME_WIDTH;
+      tree.gapY = randomGapY();
+      score++;
+
+      // Trigger bridge at score 10
+      if (!bridgeTriggered && score === 10) {
+        bridgeTriggered = true;
+        bridgeState = "active";
+        bridgeX = GAME_WIDTH;
+        bridgePanelIndex = 0;
+      }
+
+      // Advance bridge panels starting at score 12
+      if (bridgeState !== "inactive") {
+        if (score >= 12 && bridgePanelIndex < 3) {
+          bridgePanelIndex++;
+        }
+      }
+    }
+
+    // --- COLLISION DETECTION ---
+    const mothX = 60;
+    const mothW = 40;
+    const mothH = 40;
+
+    const topTreeBottom = tree.gapY - GAP_SIZE;
+    const bottomTreeTop = tree.gapY + GAP_SIZE;
+
+    const hitTop = mothY < topTreeBottom;
+    const hitBottom = mothY + mothH > bottomTreeTop;
+    const hitX = mothX + mothW > tree.x && mothX < tree.x + 80;
+
+    if (hitX && (hitTop || hitBottom)) {
+      endGame();
+    }
+  });
+
   // --- BRIDGE ALWAYS MOVES LIKE LAYER 4 ---
   if (bridgeState !== "inactive") {
     bridgeX -= BRIDGE_SCROLL_SPEED;
 
-    // When fully off-screen, reset
     if (bridgeX <= -GAME_WIDTH) {
       bridgeState = "inactive";
       bridgePanelIndex = 0;
@@ -141,51 +179,6 @@ function update() {
   // --- BOTTOM DEATH ---
   if (mothY > GAME_HEIGHT) endGame();
 }
-
-// --- TREES ---
-trees.forEach(tree => {
-  tree.x -= 3;
-
-  // Recycle tree
-  if (tree.x + 80 < 0) {
-    tree.x = GAME_WIDTH;
-    tree.gapY = randomGapY();
-    score++;
-
-    // Trigger bridge at score 10
-    if (!bridgeTriggered && score === 10) {
-      bridgeTriggered = true;
-      bridgeState = "active";
-      bridgeX = GAME_WIDTH;
-      bridgePanelIndex = 0;
-    }
-
-    // Advance bridge panels starting at score 12
-    if (bridgeState !== "inactive") {
-      if (score >= 12 && bridgePanelIndex < 3) {
-        bridgePanelIndex++;
-      }
-      // If already at panel 4, do nothing — it will scroll off naturally
-    }
-  }
-
-  // --- COLLISION DETECTION ---
-  const mothX = 60;
-  const mothW = 40;
-  const mothH = 40;
-
-  const topTreeBottom = tree.gapY - GAP_SIZE;
-  const bottomTreeTop = tree.gapY + GAP_SIZE;
-
-  const hitTop = mothY < topTreeBottom;
-  const hitBottom = mothY + mothH > bottomTreeTop;
-  const hitX = mothX + mothW > tree.x && mothX < tree.x + 80;
-
-  if (hitX && (hitTop || hitBottom)) {
-    endGame();
-  }
-});
-
 
 // ---------- END GAME ----------
 function endGame() {
@@ -202,11 +195,9 @@ function resetGame() {
   score = 0;
   trees = [{ x: GAME_WIDTH, gapY: randomGapY() }];
 
-  // Reset bridge state
   bridgeState = "inactive";
   bridgeX = GAME_WIDTH;
   bridgePanelIndex = 0;
-  bridgePointsOnCurrentPanel = 0;
   bridgeTriggered = false;
 
   gameOverScreen.style.display = "none";
@@ -226,19 +217,18 @@ function draw() {
     ctx.drawImage(layer.img, layer.offset + GAME_WIDTH, layer.y, GAME_WIDTH, GAME_HEIGHT);
   });
 
-  // --- LAYER 4 (FOREST FRONT) ---
+  // --- LAYER 4 ---
   const layer4 = bgLayers[3];
   ctx.drawImage(layer4.img, layer4.offset, layer4.y, GAME_WIDTH, GAME_HEIGHT);
   ctx.drawImage(layer4.img, layer4.offset + GAME_WIDTH, layer4.y, GAME_WIDTH, GAME_HEIGHT);
 
-  // --- BRIDGE (ALWAYS ABOVE LAYER 4) ---
+  // --- BRIDGE ---
   if (bridgeState !== "inactive") {
-  const bridgeImg = bridgeFrames[bridgePanelIndex];
-  ctx.drawImage(bridgeImg, bridgeX, BRIDGE_Y, GAME_WIDTH, GAME_HEIGHT);
-}
+    const bridgeImg = bridgeFrames[bridgePanelIndex];
+    ctx.drawImage(bridgeImg, bridgeX, BRIDGE_Y, GAME_WIDTH, GAME_HEIGHT);
+  }
 
-
-  // --- TREES (ALWAYS ABOVE LAYER 4 + BRIDGE) ---
+  // --- TREES ---
   trees.forEach(tree => {
     ctx.drawImage(treeImage, tree.x, tree.gapY - GAP_SIZE - 200, 80, 200);
     ctx.drawImage(treeImage, tree.x, tree.gapY + GAP_SIZE, 80, 200);
