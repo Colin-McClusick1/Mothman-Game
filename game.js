@@ -70,6 +70,7 @@ let mothY = 150;
 let mothVelocity = 0;
 const gravity = 0.6;
 let frameIndex = 0;
+let flapAnimTimer = 0; // counts down wing-flap frames
 let score = 0;
 
 const GAP_SIZE = 140;
@@ -86,6 +87,7 @@ function randomGapY() {
 function flap() {
   if (!gameRunning) return;
   mothVelocity = -10;
+  flapAnimTimer = 10; // wings flap for 10 frames
 }
 
 document.addEventListener("keydown", (e) => {
@@ -246,7 +248,15 @@ bgLayers.slice(3).forEach(layer => {
 
 
   // Moth
-  const mothImg = mothFrames[Math.floor(frameIndex / 10) % 2];
+let mothImg;
+
+if (flapAnimTimer > 0) {
+  mothImg = mothFrames[1]; // wings open
+  flapAnimTimer--;
+} else {
+  mothImg = mothFrames[0]; // wings closed
+}
+
   ctx.drawImage(mothImg, 60, mothY, 40, 40);
   frameIndex++;
 
