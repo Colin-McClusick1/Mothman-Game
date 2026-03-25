@@ -89,17 +89,21 @@ function flap() {
   flapAnimTimer = 10;
 }
 
+// Mobile tap anywhere
+document.addEventListener("touchstart", flap);
+
+// Desktop click anywhere
+document.addEventListener("mousedown", flap);
+
+// Keyboard controls
 document.addEventListener("keydown", e => {
   if (e.code === "Space" || e.code === "ArrowUp") flap();
 });
-document.addEventListener("touchstart", flap);
-document.addEventListener("mousedown", flap);
 
 
 // ---------- START GAME ----------
 startScreen.addEventListener("click", () => {
   startScreen.classList.add("hidden");
-  tapButton.style.display = "flex";
   gameRunning = true;
 });
 
@@ -175,7 +179,7 @@ function update() {
 // ---------- END GAME ----------
 function endGame() {
   gameRunning = false;
-  tapButton.style.display = "none";
+
 
   finalScoreText.textContent = "Score: " + score;
 
@@ -219,7 +223,6 @@ function resetGame() {
 
   initialInput.value = "";
   gameOverScreen.style.display = "none";
-  tapButton.style.display = "flex";
   gameRunning = true;
 }
 
