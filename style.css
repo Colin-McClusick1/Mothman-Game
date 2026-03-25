@@ -5,23 +5,56 @@ html, body {
   overflow: hidden;
   height: 100%;
 }
-#startScreen, #gameOverScreen {
+#startScreen {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.75);
-  color: white;
-  display: none;              /* JS will turn these on/off */
-  flex-direction: column;
+  display: flex;
   justify-content: center;
   align-items: center;
-  text-align: center;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(3px);
+  z-index: 10;
+  animation: fadeIn 1s ease-out forwards;
 }
 
-#startScreen {
-  display: flex;              /* visible at launch */
+#titleContainer {
+  text-align: center;
+  color: white;
+  font-family: "Cinzel", serif;
+  text-shadow: 0 0 12px rgba(255, 0, 0, 0.6);
+}
+
+#gameTitle {
+  font-size: 64px;
+  margin: 0;
+  letter-spacing: 4px;
+}
+
+#subtitle {
+  font-size: 22px;
+  margin-top: 8px;
+  opacity: 0.8;
+}
+
+#tapToStart {
+  margin-top: 40px;
+  font-size: 24px;
+  opacity: 0.7;
+  animation: pulse 1.6s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.3; }
+  50% { opacity: 1; }
+  100% { opacity: 0.3; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 #tapButton {
