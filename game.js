@@ -220,8 +220,6 @@ function resetGame() {
 restartBtn.addEventListener("click", resetGame);
 
 // ---------- DRAW ----------
-function draw() {
-  ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
  function draw() {
   ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
