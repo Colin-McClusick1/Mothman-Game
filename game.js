@@ -41,7 +41,7 @@ const bgLayers = [
   { img: loadImage("bg_layer5.png"), speed: 1.0, offset: 0, y: 180 }
 ];
 
-// ---------- BRIDGE FRAMES & STATE ----------
+// ---------- BRIDGE FRAMES ----------
 const bridgeFrames = [
   loadImage("bridge1.png"),
   loadImage("bridge2.png"),
@@ -49,14 +49,12 @@ const bridgeFrames = [
   loadImage("bridge4.png")
 ];
 
-// Bridge behaves as a special replacement for layer 4
-let bridgeState = "inactive";      // "inactive", "scrollingIn", "locked", "scrollingOut"
-let bridgeX = GAME_WIDTH;          // starts off-screen to the right
-const BRIDGE_SCROLL_SPEED = 0.8;   // same as layer 4 speed
-const BRIDGE_Y = 70;               // higher so the bridge is more visible
-let bridgePanelIndex = 0;          // 0–3 => bridge1–bridge4
-let bridgePointsOnCurrentPanel = 0;
-let bridgeTriggered = false;       // ensure it only triggers once (at score 10)
+// ---------- BRIDGE STATE ----------
+let bridgeActive = false;          // Are we in the bridge sequence?
+let bridgePanelIndex = 0;          // 0–3 (bridge1–bridge4)
+let bridgePointsOnPanel = 0;       // How many points earned on this panel
+let bridgeTriggered = false;       // Only trigger once
+const BRIDGE_Y = 90;               // Higher so the bridge is more visible
 
 // ---------- MOTH + TREES ----------
 const mothFrames = [
@@ -70,8 +68,7 @@ const treeImage = loadImage("tree.png");
 let mothY = 150;
 let mothVelocity = 0;
 const gravity = 0.6;
-let frameIndex = 0;
-let flapAnimTimer = 0; // counts down wing-flap frames
+let flapAnimTimer = 0;
 let score = 0;
 
 const GAP_SIZE = 140;
@@ -88,7 +85,7 @@ function randomGapY() {
 function flap() {
   if (!gameRunning) return;
   mothVelocity = -10;
-  flapAnimTimer = 10; // wings flap for 10 frames
+  flapAnimTimer = 10;
 }
 
 document.addEventListener("keydown", (e) => {
@@ -136,25 +133,27 @@ function update() {
       tree.gapY = randomGapY();
       score++;
 
-      // Trigger bridge sequence once at score 10
+      // Trigger bridge sequence at score 10
       if (!bridgeTriggered && score === 10) {
         bridgeTriggered = true;
-        bridgeState = "scrollingIn";
-        bridgeX = GAME_WIDTH;
+        bridgeActive = true;
         bridgePanelIndex = 0;
-        bridgePointsOnCurrentPanel = 0;
+        bridgePointsOnPanel = 0;
       }
 
-      // While bridge is locked in center, advance panels per point
-      if (bridgeState === "locked") {
-        bridgePointsOnCurrentPanel++;
-        if (bridgePointsOnCurrentPanel >= 1) {
-          bridgePointsOnCurrentPanel = 0;
+      // Advance bridge panels per point
+      if (bridgeActive) {
+        bridgePointsOnPanel++;
+
+        if (bridgePointsOnPanel >= 1) {
+          bridgePointsOnPanel = 0;
+
           if (bridgePanelIndex < 3) {
-            bridgePanelIndex++; // next bridge panel
+            bridgePanelIndex++; // bridge1 → bridge2 → bridge3 → bridge4
           } else {
-            // After bridge4 has been shown for a full point, start scrolling out
-            bridgeState = "scrollingOut";
+            // After bridge4 has been shown for a full point,
+            // we simply let it scroll out naturally.
+            // No state change needed.
           }
         }
       }
@@ -177,27 +176,15 @@ function update() {
     }
   });
 
-  // ---------- BRIDGE LOGIC ----------
-  if (bridgeState === "scrollingIn") {
-    // Scroll in at same speed as layer 4
-    bridgeX -= BRIDGE_SCROLL_SPEED;
+  // End bridge sequence naturally when bridge4 scrolls offscreen
+  if (bridgeActive) {
+    const layer4 = bgLayers[3];
+    const bridgeRightEdge = layer4.offset + GAME_WIDTH + GAME_WIDTH;
 
-    // Center is when bridgeX = 0 (tile width = GAME_WIDTH, screen center = 400)
-    if (bridgeX <= 0) {
-      bridgeX = 0;
-      bridgeState = "locked"; // stop moving, wait for points to advance panels
-    }
-  }
-
-  if (bridgeState === "scrollingOut") {
-    // Scroll out at same speed as layer 4
-    bridgeX -= BRIDGE_SCROLL_SPEED;
-
-    // Once fully off-screen, deactivate
-    if (bridgeX <= -GAME_WIDTH) {
-      bridgeState = "inactive";
+    if (bridgeRightEdge < 0) {
+      bridgeActive = false;
       bridgePanelIndex = 0;
-      bridgePointsOnCurrentPanel = 0;
+      bridgePointsOnPanel = 0;
     }
   }
 
@@ -220,11 +207,9 @@ function resetGame() {
   score = 0;
   trees = [{ x: GAME_WIDTH, gapY: randomGapY() }];
 
-  // Reset bridge state
-  bridgeState = "inactive";
-  bridgeX = GAME_WIDTH;
+  bridgeActive = false;
   bridgePanelIndex = 0;
-  bridgePointsOnCurrentPanel = 0;
+  bridgePointsOnPanel = 0;
   bridgeTriggered = false;
 
   gameOverScreen.style.display = "none";
@@ -244,37 +229,29 @@ function draw() {
     ctx.drawImage(layer.img, layer.offset + GAME_WIDTH, layer.y, GAME_WIDTH, GAME_HEIGHT);
   });
 
-  // Layer 4 / Bridge behavior
+  // Draw layer 4 normally
   const layer4 = bgLayers[3];
+  ctx.drawImage(layer4.img, layer4.offset, layer4.y, GAME_WIDTH, GAME_HEIGHT);
+  ctx.drawImage(layer4.img, layer4.offset + GAME_WIDTH, layer4.y, GAME_WIDTH, GAME_HEIGHT);
 
-  if (bridgeState === "inactive") {
-    // Normal layer 4 loop
-    ctx.drawImage(layer4.img, layer4.offset, layer4.y, GAME_WIDTH, GAME_HEIGHT);
-    ctx.drawImage(layer4.img, layer4.offset + GAME_WIDTH, layer4.y, GAME_WIDTH, GAME_HEIGHT);
-  } else {
-    // Bridge replaces layer 4 while active
+  // Draw bridge OVER layer 4 (covers both tiles)
+  if (bridgeActive) {
     const bridgeImg = bridgeFrames[bridgePanelIndex];
 
-    // While scrolling in/out, bridgeX moves; while locked, bridgeX = 0
-    ctx.drawImage(bridgeImg, bridgeX, BRIDGE_Y, GAME_WIDTH, GAME_HEIGHT);
+    ctx.drawImage(bridgeImg, layer4.offset, BRIDGE_Y, GAME_WIDTH, GAME_HEIGHT);
+    ctx.drawImage(bridgeImg, layer4.offset + GAME_WIDTH, BRIDGE_Y, GAME_WIDTH, GAME_HEIGHT);
   }
 
-  // Draw layer 5 (ground) as usual
+  // Draw layer 5 (ground)
   const layer5 = bgLayers[4];
   ctx.drawImage(layer5.img, layer5.offset, layer5.y, GAME_WIDTH, GAME_HEIGHT);
-  ctx.drawImage(layer5.img, layer5.offset + GAME_WIDTH, layer5.y, GAME_WIDTH, GAME_HEIGHT);
+  ctx.drawImage(layer5.img, layer5.offset + GAME_WIDTH, layer5.y, GAME_HEIGHT);
 
   // Moth
-  let mothImg;
-  if (flapAnimTimer > 0) {
-    mothImg = mothFrames[1]; // wings open
-    flapAnimTimer--;
-  } else {
-    mothImg = mothFrames[0]; // wings closed
-  }
+  let mothImg = flapAnimTimer > 0 ? mothFrames[1] : mothFrames[0];
+  if (flapAnimTimer > 0) flapAnimTimer--;
 
   ctx.drawImage(mothImg, 60, mothY, 40, 40);
-  frameIndex++;
 
   // Trees
   trees.forEach(tree => {
