@@ -6,7 +6,6 @@ const startScreen = document.getElementById("startScreen");
 const gameOverScreen = document.getElementById("gameOverScreen");
 const finalScoreText = document.getElementById("finalScore");
 const restartBtn = document.getElementById("restartBtn");
-const tapButton = document.getElementById("tapButton");
 
 const initialEntry = document.getElementById("initialEntry");
 const initialInput = document.getElementById("initialInput");
@@ -22,6 +21,9 @@ let highScoreName = localStorage.getItem("highScoreName") || "---";
 // Virtual resolution
 const GAME_WIDTH = 800;
 const GAME_HEIGHT = 450;
+
+// ---------- DYNAMIC SPEED SCALING ----------
+const speedScale = window.innerWidth / GAME_WIDTH;
 
 // Resize canvas
 function resizeCanvas() {
@@ -59,7 +61,7 @@ const bridgeFrames = [
 
 let bridgeState = "inactive";
 let bridgeX = GAME_WIDTH;
-const BRIDGE_SCROLL_SPEED = 0.8;
+const BRIDGE_SCROLL_SPEED = 0.8 * speedScale;
 const BRIDGE_Y = 90;
 let bridgePanelIndex = 0;
 let bridgeTriggered = false;
@@ -70,7 +72,7 @@ const treeImage = loadImage("tree.png");
 
 let mothY = 150;
 let mothVelocity = 0;
-const gravity = 0.6;
+const gravity = 0.6 * speedScale;
 let flapAnimTimer = 0;
 let score = 0;
 
@@ -85,7 +87,7 @@ function randomGapY() {
 // ---------- INPUT ----------
 function flap() {
   if (!gameRunning) return;
-  mothVelocity = -10;
+  mothVelocity = -10 * speedScale;
   flapAnimTimer = 10;
 }
 
@@ -99,7 +101,6 @@ document.addEventListener("mousedown", flap);
 document.addEventListener("keydown", e => {
   if (e.code === "Space" || e.code === "ArrowUp") flap();
 });
-
 
 // ---------- START GAME ----------
 startScreen.addEventListener("click", () => {
@@ -122,13 +123,13 @@ function update() {
 
   // Background
   bgLayers.forEach(layer => {
-    layer.offset -= layer.speed;
+    layer.offset -= layer.speed * speedScale;
     if (layer.offset <= -GAME_WIDTH) layer.offset += GAME_WIDTH;
   });
 
   // Trees
   trees.forEach(tree => {
-    tree.x -= 3.5;
+    tree.x -= 3.5 * speedScale;
 
     if (tree.x + 80 < 0) {
       tree.x = GAME_WIDTH;
@@ -179,7 +180,6 @@ function update() {
 // ---------- END GAME ----------
 function endGame() {
   gameRunning = false;
-
 
   finalScoreText.textContent = "Score: " + score;
 
