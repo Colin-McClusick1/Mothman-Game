@@ -238,51 +238,40 @@ restartBtn.addEventListener("click", resetGame);
 function draw() {
   ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-  // Draw layers 1–3
+  // --- BACKGROUND LAYERS (1–3) ---
   bgLayers.slice(0, 3).forEach(layer => {
     ctx.drawImage(layer.img, layer.offset, layer.y, GAME_WIDTH, GAME_HEIGHT);
     ctx.drawImage(layer.img, layer.offset + GAME_WIDTH, layer.y, GAME_WIDTH, GAME_HEIGHT);
   });
 
-  // Layer 4 / Bridge behavior
+  // --- LAYER 4 (FOREST FRONT) ---
   const layer4 = bgLayers[3];
+  ctx.drawImage(layer4.img, layer4.offset, layer4.y, GAME_WIDTH, GAME_HEIGHT);
+  ctx.drawImage(layer4.img, layer4.offset + GAME_WIDTH, layer4.y, GAME_WIDTH, GAME_HEIGHT);
 
-  if (bridgeState === "inactive") {
-    // Normal layer 4 loop
-    ctx.drawImage(layer4.img, layer4.offset, layer4.y, GAME_WIDTH, GAME_HEIGHT);
-    ctx.drawImage(layer4.img, layer4.offset + GAME_WIDTH, layer4.y, GAME_WIDTH, GAME_HEIGHT);
-  } else {
-    // Bridge replaces layer 4 while active
+  // --- BRIDGE (ALWAYS ABOVE LAYER 4) ---
+  if (bridgeState !== "inactive") {
     const bridgeImg = bridgeFrames[bridgePanelIndex];
-
-    // While scrolling in/out, bridgeX moves; while locked, bridgeX = 0
     ctx.drawImage(bridgeImg, bridgeX, BRIDGE_Y, GAME_WIDTH, GAME_HEIGHT);
   }
 
-  // Draw layer 5 (ground) as usual
-  const layer5 = bgLayers[4];
-  ctx.drawImage(layer5.img, layer5.offset, layer5.y, GAME_WIDTH, GAME_HEIGHT);
-  ctx.drawImage(layer5.img, layer5.offset + GAME_WIDTH, layer5.y, GAME_WIDTH, GAME_HEIGHT);
-
-  // Moth
-  let mothImg;
-  if (flapAnimTimer > 0) {
-    mothImg = mothFrames[1]; // wings open
-    flapAnimTimer--;
-  } else {
-    mothImg = mothFrames[0]; // wings closed
-  }
-
-  ctx.drawImage(mothImg, 60, mothY, 40, 40);
-  frameIndex++;
-
-  // Trees
+  // --- TREES (ALWAYS ABOVE LAYER 4 + BRIDGE) ---
   trees.forEach(tree => {
     ctx.drawImage(treeImage, tree.x, tree.gapY - GAP_SIZE - 200, 80, 200);
     ctx.drawImage(treeImage, tree.x, tree.gapY + GAP_SIZE, 80, 200);
   });
 
-  // Score
+  // --- LAYER 5 (GROUND) ---
+  const layer5 = bgLayers[4];
+  ctx.drawImage(layer5.img, layer5.offset, layer5.y, GAME_WIDTH, GAME_HEIGHT);
+  ctx.drawImage(layer5.img, layer5.offset + GAME_WIDTH, layer5.y, GAME_WIDTH, GAME_HEIGHT);
+
+  // --- MOTH ---
+  let mothImg = flapAnimTimer > 0 ? mothFrames[1] : mothFrames[0];
+  if (flapAnimTimer > 0) flapAnimTimer--;
+  ctx.drawImage(mothImg, 60, mothY, 40, 40);
+
+  // --- SCORE ---
   ctx.fillStyle = "white";
   ctx.font = "24px Arial";
   ctx.fillText("Score: " + score, 20, 40);
