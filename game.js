@@ -223,35 +223,35 @@ restartBtn.addEventListener("click", resetGame);
 function draw() {
   ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-  // Draw layers 1–3
+ function draw() {
+  ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+  // Draw layers 1–3 (tall parallax images)
   bgLayers.slice(0, 3).forEach(layer => {
-    ctx.drawImage(layer.img, layer.offset, layer.y, GAME_WIDTH, GAME_HEIGHT);
-    ctx.drawImage(layer.img, layer.offset + GAME_WIDTH, layer.y, GAME_WIDTH, GAME_HEIGHT);
+    ctx.drawImage(layer.img, layer.offset, 0);
+    ctx.drawImage(layer.img, layer.offset + GAME_WIDTH, 0);
   });
 
-  // Draw layer 4 normally
+  // Draw layer 4 (also tall)
   const layer4 = bgLayers[3];
-  ctx.drawImage(layer4.img, layer4.offset, layer4.y, GAME_WIDTH, GAME_HEIGHT);
-  ctx.drawImage(layer4.img, layer4.offset + GAME_WIDTH, layer4.y, GAME_WIDTH, GAME_HEIGHT);
+  ctx.drawImage(layer4.img, layer4.offset, 0);
+  ctx.drawImage(layer4.img, layer4.offset + GAME_WIDTH, 0);
 
-  // Draw bridge OVER layer 4 (covers both tiles)
+  // Draw bridge OVER layer 4
   if (bridgeActive) {
     const bridgeImg = bridgeFrames[bridgePanelIndex];
-
-    ctx.drawImage(bridgeImg, layer4.offset, BRIDGE_Y, GAME_WIDTH, GAME_HEIGHT);
-    ctx.drawImage(bridgeImg, layer4.offset + GAME_WIDTH, BRIDGE_Y, GAME_WIDTH, GAME_HEIGHT);
+    ctx.drawImage(bridgeImg, layer4.offset, BRIDGE_Y);
+    ctx.drawImage(bridgeImg, layer4.offset + GAME_WIDTH, BRIDGE_Y);
   }
 
-// Draw layer 5 (ground)
-const layer5 = bgLayers[4];
-ctx.drawImage(layer5.img, layer5.offset, layer5.y, GAME_WIDTH, GAME_HEIGHT);
-ctx.drawImage(layer5.img, layer5.offset + GAME_WIDTH, layer5.y, GAME_WIDTH, GAME_HEIGHT);
-
+  // Draw layer 5 (ground)
+  const layer5 = bgLayers[4];
+  ctx.drawImage(layer5.img, layer5.offset, 0);
+  ctx.drawImage(layer5.img, layer5.offset + GAME_WIDTH, 0);
 
   // Moth
   let mothImg = flapAnimTimer > 0 ? mothFrames[1] : mothFrames[0];
   if (flapAnimTimer > 0) flapAnimTimer--;
-
   ctx.drawImage(mothImg, 60, mothY, 40, 40);
 
   // Trees
