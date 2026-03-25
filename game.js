@@ -93,11 +93,12 @@ document.addEventListener("keydown", e => {
   if (e.code === "Space" || e.code === "ArrowUp") flap();
 });
 document.addEventListener("touchstart", flap);
-tapButton.addEventListener("click", flap);
+document.addEventListener("mousedown", flap);
+
 
 // ---------- START GAME ----------
 startScreen.addEventListener("click", () => {
-  startScreen.style.display = "none";
+  startScreen.classList.add("hidden");
   tapButton.style.display = "flex";
   gameRunning = true;
 });
