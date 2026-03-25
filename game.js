@@ -126,50 +126,7 @@ function update() {
     if (layer.offset <= -GAME_WIDTH) layer.offset += GAME_WIDTH;
   });
 
-  // --- TREES ---
-  trees.forEach(tree => {
-    tree.x -= 3;
-
-    // Recycle tree
-    if (tree.x + 80 < 0) {
-      tree.x = GAME_WIDTH;
-      tree.gapY = randomGapY();
-      score++;
-
-      // Trigger bridge at score 10
-      if (!bridgeTriggered && score === 10) {
-        bridgeTriggered = true;
-        bridgeState = "active";
-        bridgeX = GAME_WIDTH;
-        bridgePanelIndex = 0;
-      }
-
-      // Advance bridge panel on every point
-      if (bridgeState !== "inactive") {
-        if (bridgePanelIndex < 3) {
-          bridgePanelIndex++;
-        }
-        // If already at panel 4, do nothing — it will scroll off naturally
-      }
-    }
-
-    // --- COLLISION DETECTION ---
-    const mothX = 60;
-    const mothW = 40;
-    const mothH = 40;
-
-    const topTreeBottom = tree.gapY - GAP_SIZE;
-    const bottomTreeTop = tree.gapY + GAP_SIZE;
-
-    const hitTop = mothY < topTreeBottom;
-    const hitBottom = mothY + mothH > bottomTreeTop;
-    const hitX = mothX + mothW > tree.x && mothX < tree.x + 80;
-
-    if (hitX && (hitTop || hitBottom)) {
-      endGame();
-    }
-  });
-
+ 
   // --- BRIDGE ALWAYS MOVES LIKE LAYER 4 ---
   if (bridgeState !== "inactive") {
     bridgeX -= BRIDGE_SCROLL_SPEED;
@@ -184,6 +141,50 @@ function update() {
   // --- BOTTOM DEATH ---
   if (mothY > GAME_HEIGHT) endGame();
 }
+
+// --- TREES ---
+trees.forEach(tree => {
+  tree.x -= 3;
+
+  // Recycle tree
+  if (tree.x + 80 < 0) {
+    tree.x = GAME_WIDTH;
+    tree.gapY = randomGapY();
+    score++;
+
+    // Trigger bridge at score 10
+    if (!bridgeTriggered && score === 10) {
+      bridgeTriggered = true;
+      bridgeState = "active";
+      bridgeX = GAME_WIDTH;
+      bridgePanelIndex = 0;
+    }
+
+    // Advance bridge panels starting at score 12
+    if (bridgeState !== "inactive") {
+      if (score >= 12 && bridgePanelIndex < 3) {
+        bridgePanelIndex++;
+      }
+      // If already at panel 4, do nothing — it will scroll off naturally
+    }
+  }
+
+  // --- COLLISION DETECTION ---
+  const mothX = 60;
+  const mothW = 40;
+  const mothH = 40;
+
+  const topTreeBottom = tree.gapY - GAP_SIZE;
+  const bottomTreeTop = tree.gapY + GAP_SIZE;
+
+  const hitTop = mothY < topTreeBottom;
+  const hitBottom = mothY + mothH > bottomTreeTop;
+  const hitX = mothX + mothW > tree.x && mothX < tree.x + 80;
+
+  if (hitX && (hitTop || hitBottom)) {
+    endGame();
+  }
+});
 
 
 // ---------- END GAME ----------
