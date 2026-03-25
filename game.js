@@ -111,7 +111,7 @@ startScreen.addEventListener("click", () => {
 function update() {
   if (!gameRunning) return;
 
-  // Moth physics
+  // --- MOTH PHYSICS ---
   mothVelocity += gravity;
   mothY += mothVelocity;
 
@@ -120,13 +120,13 @@ function update() {
     mothVelocity = 0;
   }
 
-  // Parallax background
+  // --- PARALLAX BACKGROUND ---
   bgLayers.forEach(layer => {
     layer.offset -= layer.speed;
     if (layer.offset <= -GAME_WIDTH) layer.offset += GAME_WIDTH;
   });
 
-  // Trees
+  // --- TREES ---
   trees.forEach(tree => {
     tree.x -= 3;
 
@@ -136,30 +136,24 @@ function update() {
       tree.gapY = randomGapY();
       score++;
 
-      // Trigger bridge sequence once at score 10
+      // Trigger bridge at score 10
       if (!bridgeTriggered && score === 10) {
         bridgeTriggered = true;
         bridgeState = "active";
         bridgeX = GAME_WIDTH;
         bridgePanelIndex = 0;
-        bridgePointsOnCurrentPanel = 0;
       }
 
-     if (tree.x + 80 < 0) {
-    tree.x = GAME_WIDTH;
-    tree.gapY = randomGapY();
-    score++;
+      // Advance bridge panel on every point
+      if (bridgeState !== "inactive") {
+        if (bridgePanelIndex < 3) {
+          bridgePanelIndex++;
+        }
+        // If already at panel 4, do nothing — it will scroll off naturally
+      }
+    }
 
-       // If bridge is active, advance panel on every point
-if (bridgeState !== "inactive") {
-  if (bridgePanelIndex < 3) {
-    bridgePanelIndex++;
-  }
-  // If already on panel 4, do nothing — it will scroll off naturally
-}
-
-
-    // Collision detection
+    // --- COLLISION DETECTION ---
     const mothX = 60;
     const mothW = 40;
     const mothH = 40;
@@ -176,21 +170,21 @@ if (bridgeState !== "inactive") {
     }
   });
 
-// --- BRIDGE ALWAYS MOVES LIKE LAYER 4 ---
-if (bridgeState !== "inactive") {
-  bridgeX -= BRIDGE_SCROLL_SPEED;
+  // --- BRIDGE ALWAYS MOVES LIKE LAYER 4 ---
+  if (bridgeState !== "inactive") {
+    bridgeX -= BRIDGE_SCROLL_SPEED;
 
-  // When fully off-screen, reset
-  if (bridgeX <= -GAME_WIDTH) {
-    bridgeState = "inactive";
-    bridgePanelIndex = 0;
+    // When fully off-screen, reset
+    if (bridgeX <= -GAME_WIDTH) {
+      bridgeState = "inactive";
+      bridgePanelIndex = 0;
+    }
   }
-}
 
-
-  // Bottom kills player
+  // --- BOTTOM DEATH ---
   if (mothY > GAME_HEIGHT) endGame();
 }
+
 
 // ---------- END GAME ----------
 function endGame() {
