@@ -31,6 +31,11 @@ function loadImage(src) {
   img.src = src;
   return img;
 }
+// Bridge animation state
+let bridgeX = GAME_WIDTH;      // starts off-screen to the right
+const BRIDGE_SPEED = 2;        // how fast it scrolls in
+let bridgeState = "hidden";    // hidden → entering → collapsing → exiting
+let collapseTimer = 0;
 
 // ---------- BACKGROUND LAYERS ----------
 const bgLayers = [
@@ -127,14 +132,48 @@ function update() {
       tree.gapY = randomGapY();
       score++;
 
-      // Bridge logic
-      if (score === 10) {
-        bridgeActive = true;
-        bridgeFrameIndex = 0;
-      } else if (bridgeActive && score > 10 && score % 2 === 0 && bridgeFrameIndex < 3) {
-        bridgeFrameIndex++;
-      }
+      // ----- BRIDGE LOGIC -----
+if (bridgeState === "hidden" && score === 10) {
+    bridgeState = "entering";
+    bridgeFrameIndex = 0;
+    bridgeX = GAME_WIDTH;
+}
+
+if (bridgeState === "entering") {
+    bridgeX -= BRIDGE_SPEED;
+
+    // Once centered, begin collapse
+    if (bridgeX <= 0) {
+        bridgeX = 0;
+        bridgeState = "collapsing";
+        collapseTimer = 0;
     }
+}
+
+if (bridgeState === "collapsing") {
+    collapseTimer++;
+
+    // Every 60 frames (~1 sec), advance collapse frame
+    if (collapseTimer % 60 === 0 && bridgeFrameIndex < 3) {
+        bridgeFrameIndex++;
+    }
+
+    // When fully collapsed, slide away
+    if (bridgeFrameIndex === 3) {
+        bridgeState = "exiting";
+    }
+}
+
+if (bridgeState === "exiting") {
+    bridgeX -= BRIDGE_SPEED;
+
+    // Once fully off-screen, reset to forest
+    if (bridgeX <= -GAME_WIDTH) {
+        bridgeState = "hidden";
+        bridgeFrameIndex = -1;
+    }
+}
+
 
     // Collision detection
     const mothX = 60;
@@ -190,9 +229,15 @@ function draw() {
     ctx.drawImage(layer.img, layer.offset + GAME_WIDTH, layer.y, GAME_WIDTH, GAME_HEIGHT);
   });
 
-  // Bridge
-  if (bridgeActive && bridgeFrameIndex >= 0) {
-    ctx.drawImage(bridgeFrames[bridgeFrameIndex], 0, 0, GAME_WIDTH, GAME_HEIGHT);
+ // ----- DRAW BRIDGE -----
+if (bridgeState !== "hidden" && bridgeFrameIndex >= 0) {
+    ctx.drawImage(
+        bridgeFrames[bridgeFrameIndex],
+        bridgeX,
+        0,
+        GAME_WIDTH,
+        GAME_HEIGHT
+    );
   }
 
   // Moth
