@@ -221,31 +221,27 @@ restartBtn.addEventListener("click", resetGame);
 // ---------- DRAW ----------
 function draw() {
   ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-
-  // Draw layers 1–3
-bgLayers.slice(0, 3).forEach(layer => {
+// Draw layers 1–4
+bgLayers.slice(0, 4).forEach(layer => {
   ctx.drawImage(layer.img, layer.offset, layer.y, GAME_WIDTH, GAME_HEIGHT);
   ctx.drawImage(layer.img, layer.offset + GAME_WIDTH, layer.y, GAME_WIDTH, GAME_HEIGHT);
 });
 
-// Draw bridge as a true parallax layer
+// Draw bridge between layer 4 and 5
 if (bridgeState !== "hidden" && bridgeFrameIndex >= 0) {
   ctx.drawImage(
     bridgeFrames[bridgeFrameIndex],
     bridgeX,
-    80,   // vertical offset to match layer 3
+    150,   // vertical offset to match layer 4 depth
     GAME_WIDTH,
     GAME_HEIGHT
   );
 }
 
-// Draw layers 4–5
-bgLayers.slice(3).forEach(layer => {
-  ctx.drawImage(layer.img, layer.offset, layer.y, GAME_WIDTH, GAME_HEIGHT);
-  ctx.drawImage(layer.img, layer.offset + GAME_WIDTH, layer.y, GAME_WIDTH, GAME_HEIGHT);
-});
+// Draw layer 5 (ground)
+ctx.drawImage(bgLayers[4].img, bgLayers[4].offset, bgLayers[4].y, GAME_WIDTH, GAME_HEIGHT);
+ctx.drawImage(bgLayers[4].img, bgLayers[4].offset + GAME_WIDTH, bgLayers[4].y, GAME_WIDTH, GAME_HEIGHT);
 ;
-
 
   // Moth
 let mothImg;
