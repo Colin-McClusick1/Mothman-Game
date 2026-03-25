@@ -123,7 +123,7 @@ function update() {
 
   // Trees
   trees.forEach(tree => {
-    tree.x -= 3;
+    tree.x -= 3.5;
 
     if (tree.x + 80 < 0) {
       tree.x = GAME_WIDTH;
