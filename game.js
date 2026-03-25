@@ -31,9 +31,10 @@ function loadImage(src) {
   img.src = src;
   return img;
 }
-// Bridge animation state
+
+// ---------- BRIDGE ANIMATION STATE ----------
 let bridgeX = GAME_WIDTH;      // starts off-screen to the right
-const BRIDGE_SPEED = 2;        // how fast it scrolls in
+const BRIDGE_SPEED = 2;        // slide speed
 let bridgeState = "hidden";    // hidden → entering → collapsing → exiting
 let collapseTimer = 0;
 
@@ -54,7 +55,6 @@ const bridgeFrames = [
   loadImage("bridge4.png")
 ];
 
-let bridgeActive = false;
 let bridgeFrameIndex = -1;
 
 // ---------- MOTH + TREES ----------
@@ -108,10 +108,10 @@ startScreen.addEventListener("click", () => {
 function update() {
   if (!gameRunning) return;
 
+  // Moth physics
   mothVelocity += gravity;
   mothY += mothVelocity;
 
-  // Prevent top-of-screen death
   if (mothY < 0) {
     mothY = 0;
     mothVelocity = 0;
@@ -127,53 +127,12 @@ function update() {
   trees.forEach(tree => {
     tree.x -= 3;
 
+    // Recycle tree
     if (tree.x + 80 < 0) {
       tree.x = GAME_WIDTH;
       tree.gapY = randomGapY();
       score++;
-
-      // ----- BRIDGE LOGIC -----
-if (bridgeState === "hidden" && score === 10) {
-    bridgeState = "entering";
-    bridgeFrameIndex = 0;
-    bridgeX = GAME_WIDTH;
-}
-
-if (bridgeState === "entering") {
-    bridgeX -= BRIDGE_SPEED;
-
-    // Once centered, begin collapse
-    if (bridgeX <= 0) {
-        bridgeX = 0;
-        bridgeState = "collapsing";
-        collapseTimer = 0;
     }
-}
-
-if (bridgeState === "collapsing") {
-    collapseTimer++;
-
-    // Every 60 frames (~1 sec), advance collapse frame
-    if (collapseTimer % 60 === 0 && bridgeFrameIndex < 3) {
-        bridgeFrameIndex++;
-    }
-
-    // When fully collapsed, slide away
-    if (bridgeFrameIndex === 3) {
-        bridgeState = "exiting";
-    }
-}
-
-if (bridgeState === "exiting") {
-    bridgeX -= BRIDGE_SPEED;
-
-    // Once fully off-screen, reset to forest
-    if (bridgeX <= -GAME_WIDTH) {
-        bridgeState = "hidden";
-        bridgeFrameIndex = -1;
-    }
-}
-
 
     // Collision detection
     const mothX = 60;
@@ -191,6 +150,44 @@ if (bridgeState === "exiting") {
       endGame();
     }
   });
+
+  // ---------- BRIDGE LOGIC ----------
+  if (bridgeState === "hidden" && score === 10) {
+    bridgeState = "entering";
+    bridgeFrameIndex = 0;
+    bridgeX = GAME_WIDTH;
+  }
+
+  if (bridgeState === "entering") {
+    bridgeX -= BRIDGE_SPEED;
+
+    if (bridgeX <= 0) {
+      bridgeX = 0;
+      bridgeState = "collapsing";
+      collapseTimer = 0;
+    }
+  }
+
+  if (bridgeState === "collapsing") {
+    collapseTimer++;
+
+    if (collapseTimer % 60 === 0 && bridgeFrameIndex < 3) {
+      bridgeFrameIndex++;
+    }
+
+    if (bridgeFrameIndex === 3) {
+      bridgeState = "exiting";
+    }
+  }
+
+  if (bridgeState === "exiting") {
+    bridgeX -= BRIDGE_SPEED;
+
+    if (bridgeX <= -GAME_WIDTH) {
+      bridgeState = "hidden";
+      bridgeFrameIndex = -1;
+    }
+  }
 
   // Bottom kills player
   if (mothY > GAME_HEIGHT) endGame();
@@ -210,7 +207,7 @@ function resetGame() {
   mothVelocity = 0;
   score = 0;
   trees = [{ x: GAME_WIDTH, gapY: randomGapY() }];
-  bridgeActive = false;
+  bridgeState = "hidden";
   bridgeFrameIndex = -1;
   gameOverScreen.style.display = "none";
   tapButton.style.display = "flex";
@@ -229,14 +226,14 @@ function draw() {
     ctx.drawImage(layer.img, layer.offset + GAME_WIDTH, layer.y, GAME_WIDTH, GAME_HEIGHT);
   });
 
- // ----- DRAW BRIDGE -----
-if (bridgeState !== "hidden" && bridgeFrameIndex >= 0) {
+  // Bridge
+  if (bridgeState !== "hidden" && bridgeFrameIndex >= 0) {
     ctx.drawImage(
-        bridgeFrames[bridgeFrameIndex],
-        bridgeX,
-        0,
-        GAME_WIDTH,
-        GAME_HEIGHT
+      bridgeFrames[bridgeFrameIndex],
+      bridgeX,
+      0,
+      GAME_WIDTH,
+      GAME_HEIGHT
     );
   }
 
