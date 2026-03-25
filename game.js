@@ -38,7 +38,7 @@ const bgLayers = [
   { img: loadImage("bg_layer2.png"), speed: 0.4, offset: 0, y: 40 },
   { img: loadImage("bg_layer3.png"), speed: 0.6, offset: 0, y: 80 },
   { img: loadImage("bg_layer4.png"), speed: 0.8, offset: 0, y: 120 },
-  { img: loadImage("bg_layer5.png"), speed: 1.0, offset: 0, y: 180 }
+  { img: loadImage("bg_layer5.png"), speed: 1.0, offset: 0, y: 300 }
 ];
 
 // ---------- BRIDGE FRAMES & STATE ----------
