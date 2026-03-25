@@ -233,12 +233,12 @@ if (bridgeState !== "hidden" && bridgeFrameIndex >= 0) {
   ctx.drawImage(
     bridgeFrames[bridgeFrameIndex],
     bridgeX,
-    120,   // same vertical offset as old layer 4
+    120,   // same vertical offset as original layer 4
     GAME_WIDTH,
     GAME_HEIGHT
   );
 } else {
-  // If bridge is hidden, draw the original layer 4
+  // Draw original layer 4 when bridge is not active
   const layer4 = bgLayers[3];
   ctx.drawImage(layer4.img, layer4.offset, layer4.y, GAME_WIDTH, GAME_HEIGHT);
   ctx.drawImage(layer4.img, layer4.offset + GAME_WIDTH, layer4.y, GAME_WIDTH, GAME_HEIGHT);
