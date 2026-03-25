@@ -243,9 +243,10 @@ function draw() {
   }
 
   // Draw layer 5 (ground)
-  const layer5 = bgLayers[4];
-  ctx.drawImage(layer5.img, layer5.offset, layer5.y, GAME_WIDTH, GAME_HEIGHT);
-  ctx.drawImage(layer5.img, layer5.offset + GAME_WIDTH, layer5.y, GAME_HEIGHT);
+const layer5 = bgLayers[4];
+ctx.drawImage(layer5.img, layer5.offset, layer5.y, GAME_WIDTH, GAME_HEIGHT);
+ctx.drawImage(layer5.img, layer5.offset + GAME_WIDTH, layer5.y, GAME_WIDTH, GAME_HEIGHT);
+
 
   // Moth
   let mothImg = flapAnimTimer > 0 ? mothFrames[1] : mothFrames[0];
