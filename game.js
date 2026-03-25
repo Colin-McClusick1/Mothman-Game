@@ -37,6 +37,12 @@ let bridgeX = GAME_WIDTH;      // starts off-screen to the right
 const BRIDGE_SPEED = 2;        // slide speed
 let bridgeState = "hidden";    // hidden → entering → collapsing → exiting
 let collapseTimer = 0;
+let bridgeFrameIndex = -1;
+
+// Extra bridge/transition state
+let bridgePasses = 0;          // counts how many trees passed during bridge event
+let layer4SlideX = 0;          // how far layer 4 slides out
+const LAYER4_SLIDE_SPEED = 2;
 
 // ---------- BACKGROUND LAYERS ----------
 const bgLayers = [
@@ -54,8 +60,6 @@ const bridgeFrames = [
   loadImage("bridge3.png"),
   loadImage("bridge4.png")
 ];
-
-let bridgeFrameIndex = -1;
 
 // ---------- MOTH + TREES ----------
 const mothFrames = [
@@ -134,6 +138,11 @@ function update() {
       tree.x = GAME_WIDTH;
       tree.gapY = randomGapY();
       score++;
+
+      // Count fly-throughs while bridge is active
+      if (bridgeState !== "hidden") {
+        bridgePasses++;
+      }
     }
 
     // Collision detection
@@ -154,57 +163,50 @@ function update() {
   });
 
   // ---------- BRIDGE LOGIC ----------
-if (bridgeState === "hidden" && score === 10) {
-  bridgeState = "entering";
-  bridgeFrameIndex = 0;
-  bridgeX = GAME_WIDTH;
-  layer4SlideX = 0;
-  bridgePasses = 0;
-}
-
-if (bridgeState === "entering") {
-  bridgeX -= BRIDGE_SPEED;
-  layer4SlideX += LAYER4_SLIDE_SPEED;
-
-  if (bridgeX <= 0) {
-    bridgeX = 0;
-    bridgeState = "collapsing";
+  if (bridgeState === "hidden" && score === 10) {
+    bridgeState = "entering";
+    bridgeFrameIndex = 0;
+    bridgeX = GAME_WIDTH;
+    layer4SlideX = 0;
+    bridgePasses = 0;
     collapseTimer = 0;
   }
-}
 
-if (bridgeState === "collapsing") {
-  collapseTimer++;
+  if (bridgeState === "entering") {
+    bridgeX -= BRIDGE_SPEED;
+    layer4SlideX += LAYER4_SLIDE_SPEED;
 
-  if (collapseTimer % 60 === 0 && bridgeFrameIndex < 3) {
-    bridgeFrameIndex++;
+    if (bridgeX <= 0) {
+      bridgeX = 0;
+      bridgeState = "collapsing";
+      collapseTimer = 0;
+    }
   }
 
-  // Count fly-throughs
-  if (collapseTimer % 60 === 0) {
-    bridgePasses++;
+  if (bridgeState === "collapsing") {
+    collapseTimer++;
+
+    // Advance collapse frames every 60 frames
+    if (collapseTimer % 60 === 0 && bridgeFrameIndex < 3) {
+      bridgeFrameIndex++;
+    }
+
+    // Once fully collapsed and 4 fly-throughs have happened, start exiting
+    if (bridgeFrameIndex === 3 && bridgePasses >= 4) {
+      bridgeState = "exiting";
+    }
   }
 
-  // After 4 passes, begin exit
-  if (bridgePasses >= 4) {
-    bridgeState = "exiting";
+  if (bridgeState === "exiting") {
+    bridgeX -= BRIDGE_SPEED;
+    layer4SlideX -= LAYER4_SLIDE_SPEED;
+
+    if (bridgeX <= -GAME_WIDTH) {
+      bridgeState = "hidden";
+      bridgeFrameIndex = -1;
+      layer4SlideX = 0;
+    }
   }
-}
-
-if (bridgeState === "exiting") {
-  bridgeX -= BRIDGE_SPEED;
-  layer4SlideX -= LAYER4_SLIDE_SPEED;
-
-  if (bridgeX <= -GAME_WIDTH) {
-    bridgeState = "hidden";
-    bridgeFrameIndex = -1;
-    layer4SlideX = 0;
-  }
-}
-
-let bridgePasses = 0;       // counts how many trees passed during bridge event
-let layer4SlideX = 0;       // how far layer 4 slides out
-const LAYER4_SLIDE_SPEED = 2;
 
   // Bottom kills player
   if (mothY > GAME_HEIGHT) endGame();
@@ -226,6 +228,8 @@ function resetGame() {
   trees = [{ x: GAME_WIDTH, gapY: randomGapY() }];
   bridgeState = "hidden";
   bridgeFrameIndex = -1;
+  bridgePasses = 0;
+  layer4SlideX = 0;
   gameOverScreen.style.display = "none";
   tapButton.style.display = "flex";
   gameRunning = true;
@@ -237,53 +241,50 @@ restartBtn.addEventListener("click", resetGame);
 function draw() {
   ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-// Draw layers 1–3
-bgLayers.slice(0, 3).forEach(layer => {
-  ctx.drawImage(layer.img, layer.offset, layer.y, GAME_WIDTH, GAME_HEIGHT);
-  ctx.drawImage(layer.img, layer.offset + GAME_WIDTH, layer.y, GAME_WIDTH, GAME_HEIGHT);
-});
+  // Draw layers 1–3
+  bgLayers.slice(0, 3).forEach(layer => {
+    ctx.drawImage(layer.img, layer.offset, layer.y, GAME_WIDTH, GAME_HEIGHT);
+    ctx.drawImage(layer.img, layer.offset + GAME_WIDTH, layer.y, GAME_WIDTH, GAME_HEIGHT);
+  });
 
-// Draw layer 4 sliding out OR normal
-const layer4 = bgLayers[3];
-if (bridgeState === "hidden") {
-  // Normal layer 4
-  ctx.drawImage(layer4.img, layer4.offset, layer4.y, GAME_WIDTH, GAME_HEIGHT);
-  ctx.drawImage(layer4.img, layer4.offset + GAME_WIDTH, layer4.y, GAME_WIDTH, GAME_HEIGHT);
-} else {
-  // Slide layer 4 to the right
-  ctx.drawImage(layer4.img, layer4.offset + layer4SlideX, layer4.y, GAME_WIDTH, GAME_HEIGHT);
-  ctx.drawImage(layer4.img, layer4.offset + GAME_WIDTH + layer4SlideX, layer4.y, GAME_WIDTH, GAME_HEIGHT);
-}
+  // Draw layer 4 sliding out OR normal
+  const layer4 = bgLayers[3];
+  if (bridgeState === "hidden") {
+    // Normal layer 4
+    ctx.drawImage(layer4.img, layer4.offset, layer4.y, GAME_WIDTH, GAME_HEIGHT);
+    ctx.drawImage(layer4.img, layer4.offset + GAME_WIDTH, layer4.y, GAME_WIDTH, GAME_HEIGHT);
+  } else {
+    // Slide layer 4 to the right
+    ctx.drawImage(layer4.img, layer4.offset + layer4SlideX, layer4.y, GAME_WIDTH, GAME_HEIGHT);
+    ctx.drawImage(layer4.img, layer4.offset + GAME_WIDTH + layer4SlideX, layer4.y, GAME_WIDTH, GAME_HEIGHT);
+  }
 
-// Draw bridge IN PLACE of layer 4
-if (bridgeState !== "hidden" && bridgeFrameIndex >= 0) {
-  ctx.drawImage(
-    bridgeFrames[bridgeFrameIndex],
-    bridgeX,
-    120,   // same vertical offset as original layer 4
-    GAME_WIDTH,
-    GAME_HEIGHT
-  );
-}
+  // Draw bridge IN PLACE of layer 4
+  if (bridgeState !== "hidden" && bridgeFrameIndex >= 0) {
+    ctx.drawImage(
+      bridgeFrames[bridgeFrameIndex],
+      bridgeX,
+      120,   // same vertical offset as original layer 4
+      GAME_WIDTH,
+      GAME_HEIGHT
+    );
+  }
 
-// Draw layer 5 ONLY when bridge is hidden
-if (bridgeState === "hidden") {
-  const layer5 = bgLayers[4];
-  ctx.drawImage(layer5.img, layer5.offset, layer5.y, GAME_WIDTH, GAME_HEIGHT);
-  ctx.drawImage(layer5.img, layer5.offset + GAME_WIDTH, layer5.y, GAME_HEIGHT);
-}
-
-
+  // Draw layer 5 ONLY when bridge is hidden
+  if (bridgeState === "hidden") {
+    const layer5 = bgLayers[4];
+    ctx.drawImage(layer5.img, layer5.offset, layer5.y, GAME_WIDTH, GAME_HEIGHT);
+    ctx.drawImage(layer5.img, layer5.offset + GAME_WIDTH, layer5.y, GAME_WIDTH, GAME_HEIGHT);
+  }
 
   // Moth
-let mothImg;
-
-if (flapAnimTimer > 0) {
-  mothImg = mothFrames[1]; // wings open
-  flapAnimTimer--;
-} else {
-  mothImg = mothFrames[0]; // wings closed
-}
+  let mothImg;
+  if (flapAnimTimer > 0) {
+    mothImg = mothFrames[1]; // wings open
+    flapAnimTimer--;
+  } else {
+    mothImg = mothFrames[0]; // wings closed
+  }
 
   ctx.drawImage(mothImg, 60, mothY, 40, 40);
   frameIndex++;
