@@ -1,3 +1,4 @@
+/* RESET + BASE */
 html, body {
   margin: 0;
   padding: 0;
@@ -8,15 +9,21 @@ html, body {
   font-family: Arial, sans-serif;
 }
 
-/* Canvas fills the screen */
+/* GAME CANVAS — sits behind UI, does NOT block clicks */
 #gameCanvas {
   width: 100vw;
   height: 100vh;
   background: #000;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  pointer-events: none; /* Canvas must NOT block start screen clicks */
 }
 
-/* Start + Game Over Screens */
-#startScreen, #gameOverScreen {
+/* START + GAME OVER SCREENS — full overlay, clickable */
+#startScreen,
+#gameOverScreen {
   position: fixed;
   top: 0;
   left: 0;
@@ -30,26 +37,33 @@ html, body {
   align-items: center;
   text-align: center;
   z-index: 9999;
+  pointer-events: auto; /* Must receive clicks */
 }
 
-#startScreen h1, #gameOverScreen h1 {
+/* Title text */
+#startScreen h1,
+#gameOverScreen h1 {
   font-size: 3rem;
   margin-bottom: 1rem;
 }
 
+/* Subtitle */
 #startScreen p {
   font-size: 1.5rem;
   opacity: 0.8;
 }
 
+/* Start screen is visible by default */
 #startScreen {
   display: flex;
 }
 
+/* Game over screen hidden until triggered */
 #gameOverScreen {
   display: none;
 }
 
+/* Restart button */
 #restartBtn {
   padding: 1rem 2rem;
   font-size: 1.2rem;
@@ -57,9 +71,10 @@ html, body {
   background: #cc0000;
   color: white;
   border-radius: 8px;
+  cursor: pointer;
 }
 
-/* Mobile TAP button */
+/* MOBILE TAP BUTTON — appears during gameplay */
 #tapButton {
   position: fixed;
   bottom: 5vh;
@@ -71,9 +86,10 @@ html, body {
   border-radius: 50%;
   color: white;
   font-size: 1.4rem;
-  display: none;
+  display: none; /* Hidden until game starts */
   justify-content: center;
   align-items: center;
   z-index: 5000;
   user-select: none;
+  pointer-events: auto;
 }
