@@ -250,6 +250,25 @@ function draw() {
   ctx.fillText("Score: " + score, 20, 40);
 }
 
+<!-- GAME OVER SCREEN -->
+<div id="gameOverScreen">
+  <h1>GAME OVER</h1>
+
+  <p id="finalScore"></p>
+
+  <div id="initialEntry" style="display:none;">
+    <p>New High Score!</p>
+    <p>Enter Your Initials:</p>
+    <input id="initialInput" maxlength="3" autocomplete="off" />
+    <button id="saveInitialsBtn">Save</button>
+  </div>
+
+  <p id="highScoreDisplay"></p>
+
+  <button id="restartBtn">Restart</button>
+</div>
+
+
 // ---------- GAME LOOP ----------
 function gameLoop() {
   update();
