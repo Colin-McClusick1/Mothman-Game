@@ -139,26 +139,25 @@ function update() {
       // Trigger bridge sequence once at score 10
       if (!bridgeTriggered && score === 10) {
         bridgeTriggered = true;
-        bridgeState = "scrollingIn";
+        bridgeState = "active";
         bridgeX = GAME_WIDTH;
         bridgePanelIndex = 0;
         bridgePointsOnCurrentPanel = 0;
       }
 
-      // While bridge is locked in center, advance panels per point
-      if (bridgeState === "locked") {
-        bridgePointsOnCurrentPanel++;
-        if (bridgePointsOnCurrentPanel >= 1) {
-          bridgePointsOnCurrentPanel = 0;
-          if (bridgePanelIndex < 3) {
-            bridgePanelIndex++; // next bridge panel
-          } else {
-            // After bridge4 has been shown for a full point, start scrolling out
-            bridgeState = "scrollingOut";
-          }
-        }
-      }
-    }
+     if (tree.x + 80 < 0) {
+    tree.x = GAME_WIDTH;
+    tree.gapY = randomGapY();
+    score++;
+
+       // If bridge is active, advance panel on every point
+if (bridgeState !== "inactive") {
+  if (bridgePanelIndex < 3) {
+    bridgePanelIndex++;
+  }
+  // If already on panel 4, do nothing — it will scroll off naturally
+}
+
 
     // Collision detection
     const mothX = 60;
@@ -177,29 +176,17 @@ function update() {
     }
   });
 
-  // ---------- BRIDGE LOGIC ----------
-  if (bridgeState === "scrollingIn") {
-    // Scroll in at same speed as layer 4
-    bridgeX -= BRIDGE_SCROLL_SPEED;
+// --- BRIDGE ALWAYS MOVES LIKE LAYER 4 ---
+if (bridgeState !== "inactive") {
+  bridgeX -= BRIDGE_SCROLL_SPEED;
 
-    // Center is when bridgeX = 0 (tile width = GAME_WIDTH, screen center = 400)
-    if (bridgeX <= 0) {
-      bridgeX = 0;
-      bridgeState = "locked"; // stop moving, wait for points to advance panels
-    }
+  // When fully off-screen, reset
+  if (bridgeX <= -GAME_WIDTH) {
+    bridgeState = "inactive";
+    bridgePanelIndex = 0;
   }
+}
 
-  if (bridgeState === "scrollingOut") {
-    // Scroll out at same speed as layer 4
-    bridgeX -= BRIDGE_SCROLL_SPEED;
-
-    // Once fully off-screen, deactivate
-    if (bridgeX <= -GAME_WIDTH) {
-      bridgeState = "inactive";
-      bridgePanelIndex = 0;
-      bridgePointsOnCurrentPanel = 0;
-    }
-  }
 
   // Bottom kills player
   if (mothY > GAME_HEIGHT) endGame();
@@ -251,9 +238,10 @@ function draw() {
 
   // --- BRIDGE (ALWAYS ABOVE LAYER 4) ---
   if (bridgeState !== "inactive") {
-    const bridgeImg = bridgeFrames[bridgePanelIndex];
-    ctx.drawImage(bridgeImg, bridgeX, BRIDGE_Y, GAME_WIDTH, GAME_HEIGHT);
-  }
+  const bridgeImg = bridgeFrames[bridgePanelIndex];
+  ctx.drawImage(bridgeImg, bridgeX, BRIDGE_Y, GAME_WIDTH, GAME_HEIGHT);
+}
+
 
   // --- TREES (ALWAYS ABOVE LAYER 4 + BRIDGE) ---
   trees.forEach(tree => {
